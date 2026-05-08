@@ -1,0 +1,134 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f9fafb;
+  --foreground: #111827;
+  --green-500: #16a34a;
+  --green-600: #15803d;
+  --green-700: #166534;
+  --green-50: #f0fdf4;
+  --orange-500: #f97316;
+  --orange-600: #ea580c;
+  --orange-50: #fff7ed;
+  --card-bg: #ffffff;
+  --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  --card-shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.12);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-green-500: var(--green-500);
+  --color-green-600: var(--green-600);
+  --color-green-700: var(--green-700);
+  --color-green-50: var(--green-50);
+  --color-orange-500: var(--orange-500);
+  --color-orange-600: var(--orange-600);
+  --color-orange-50: var(--orange-50);
+  --font-sans: var(--font-inter), sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth transitions globally */
+a, button {
+  transition: all 0.2s ease;
+}
+
+/* Card animation */
+.card-hover {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card-hover:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--card-shadow-hover);
+}
+
+/* Badge styles */
+.badge-own {
+  background-color: var(--green-50);
+  color: var(--green-700);
+  border: 1px solid #bbf7d0;
+}
+.badge-affiliate {
+  background-color: var(--orange-50);
+  color: var(--orange-600);
+  border: 1px solid #fed7aa;
+}
+
+/* Button base */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  border: none;
+  transition: all 0.25s ease;
+  text-decoration: none;
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.btn-green {
+  background: linear-gradient(135deg, var(--green-500), var(--green-600));
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.3);
+}
+.btn-green:hover {
+  background: linear-gradient(135deg, var(--green-600), var(--green-700));
+  box-shadow: 0 6px 20px rgba(22, 163, 74, 0.4);
+}
+.btn-orange {
+  background: linear-gradient(135deg, var(--orange-500), var(--orange-600));
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.3);
+}
+.btn-orange:hover {
+  background: linear-gradient(135deg, var(--orange-600), #c2410c);
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
+}
+
+/* Fade-in animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+  background: #c4c4c4;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
