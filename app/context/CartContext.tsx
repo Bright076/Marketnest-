@@ -25,13 +25,29 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setIsClient(true);
+    // Only load cart from localStorage if it exists
+    // This ensures new users start with an empty cart
     const savedCart = localStorage.getItem("marketnest_cart");
     if (savedCart) {
       try {
-        setCart(JSON.parse(savedCart));
+        const parsedCart = JSON.parse(savedCart);
+        // Ensure it's a valid array
+        if (Array.isArray(parsedCart)) {
+          setCart(parsedCart);
+        } else {
+          // Invalid cart data, start fresh
+          setCart([]);
+          localStorage.removeItem("marketnest_cart");
+        }
       } catch (e) {
         console.error("Cart parse error", e);
+        // If parsing fails, start with empty cart
+        setCart([]);
+        localStorage.removeItem("marketnest_cart");
       }
+    } else {
+      // No saved cart, start with empty cart
+      setCart([]);
     }
   }, []);
 

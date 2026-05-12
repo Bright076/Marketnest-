@@ -1,6 +1,9 @@
 "use client";
 
 import { useCart } from "../context/CartContext";
+import { supabase } from "@/lib/supabaseClient";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
 interface ProductCardProps {
   id?: number;
@@ -21,14 +24,50 @@ export default function ProductCard({
 }: ProductCardProps) {
   const isLocal = type === "local";
   const badgeText = isLocal ? "Local Deal 🇳🇬" : "Global Deal 🌍";
+  const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setIsLoggedIn(!!user);
+  };
   
   const { addToCart } = useCart();
-  const handleAddToCart = () => {
+  
+  const handleAddToCart = async () => {
+    // Check if user is logged in
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      // Not logged in - show alert and redirect to login
+      if (confirm("You need to login to add items to cart. Would you like to login now?")) {
+        router.push("/login");
+      }
+      return;
+    }
+    
+    // User is logged in - proceed with adding to cart
     addToCart({ id, name, price, image, type, description });
     alert(`🛒 Added "${name}" to cart!`);
   };
 
-  const handleWhatsAppOrder = () => {
+  const handleWhatsAppOrder = async () => {
+    // Check if user is logged in
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      // Not logged in - show alert and redirect to login
+      if (confirm("You need to login to order via WhatsApp. Would you like to login now?")) {
+        router.push("/login");
+      }
+      return;
+    }
+    
+    // User is logged in - proceed with WhatsApp order
     const message = `Hi! I'm interested in ordering:\n\n*${name}*\nPrice: ${price}\n${description ? `Description: ${description}\n` : ''}\nPlease let me know the availability and delivery details.`;
     const whatsappUrl = `https://wa.me/qr/7LOW7YQ4C4C4O1?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');

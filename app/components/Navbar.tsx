@@ -2,12 +2,34 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCart } from "../context/CartContext";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const { totalItems } = useCart();
+
+  useEffect(() => {
+    checkUser();
+    
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log("Auth state changed:", _event, "User:", session?.user?.email);
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const checkUser = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    console.log("Navbar - Current user:", session?.user?.email || "Not logged in");
+    setUser(session?.user ?? null);
+  };
 
   return (
     <>
@@ -86,6 +108,47 @@ export default function Navbar() {
 
           {/* Global Action items */}
           <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+            {/* Profile Icon - Always show */}
+            <Link 
+              href={user ? "/dashboard" : "/login"}
+              style={{ 
+                textDecoration: "none", 
+                color: "#374151", 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center", 
+                padding: "0.5rem",
+                position: "relative"
+              }}
+              title={user ? "Go to Dashboard" : "Login"}
+            >
+              {user ? (
+                // Logged in - show avatar with first letter
+                <div
+                  style={{
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "50%",
+                    background: "linear-gradient(135deg, #16a34a 0%, #059669 100%)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#ffffff",
+                    fontWeight: 700,
+                    fontSize: "0.9rem",
+                    border: "2px solid #e5e7eb",
+                  }}
+                >
+                  {user.user_metadata?.full_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
+                </div>
+              ) : (
+                // Not logged in - show profile icon
+                <svg width="26" height="26" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              )}
+            </Link>
+
             {/* Unified Cart Icon */}
             <Link href="/cart" style={{ textDecoration: "none", position: "relative", color: "#374151", display: "flex", alignItems: "center", justifyContent: "center", padding: "0.5rem" }}>
               <svg width="26" height="26" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
