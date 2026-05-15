@@ -5,10 +5,12 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useCart } from "../context/CartContext";
 import { supabase } from "@/lib/supabaseClient";
+import { checkAdminAccess } from "@/lib/adminAuth";
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { totalItems } = useCart();
 
   useEffect(() => {
@@ -18,6 +20,11 @@ export default function Navbar() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       console.log("Auth state changed:", _event, "User:", session?.user?.email);
       setUser(session?.user ?? null);
+      if (session?.user) {
+        checkIfAdmin();
+      } else {
+        setIsAdmin(false);
+      }
     });
 
     return () => {
@@ -29,7 +36,18 @@ export default function Navbar() {
     const { data: { session } } = await supabase.auth.getSession();
     console.log("Navbar - Current user:", session?.user?.email || "Not logged in");
     setUser(session?.user ?? null);
+    if (session?.user) {
+      await checkIfAdmin();
+    }
   };
+
+  const checkIfAdmin = async () => {
+    const { isAdmin: adminStatus } = await checkAdminAccess();
+    setIsAdmin(adminStatus);
+  };
+
+  // Determine profile link based on admin status
+  const profileLink = user ? (isAdmin ? "/admin" : "/dashboard") : "/login";
 
   return (
     <>
@@ -110,7 +128,7 @@ export default function Navbar() {
           <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
             {/* Profile Icon - Always show */}
             <Link 
-              href={user ? "/dashboard" : "/login"}
+              href={profileLink}
               style={{ 
                 textDecoration: "none", 
                 color: "#374151", 
@@ -120,7 +138,7 @@ export default function Navbar() {
                 padding: "0.5rem",
                 position: "relative"
               }}
-              title={user ? "Go to Dashboard" : "Login"}
+              title={user ? (isAdmin ? "Go to Admin Dashboard" : "Go to Dashboard") : "Login"}
             >
               {user ? (
                 // Logged in - show avatar with first letter
@@ -129,7 +147,9 @@ export default function Navbar() {
                     width: "32px",
                     height: "32px",
                     borderRadius: "50%",
-                    background: "linear-gradient(135deg, #16a34a 0%, #059669 100%)",
+                    background: isAdmin 
+                      ? "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)" 
+                      : "linear-gradient(135deg, #16a34a 0%, #059669 100%)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",

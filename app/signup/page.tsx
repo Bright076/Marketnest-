@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { createUserProfile } from "@/lib/createProfile";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ButtonSpinner } from "../components/LoadingSpinner";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -39,6 +41,20 @@ export default function SignupPage() {
       console.log("Signup response:", authData); // Debug log
 
       if (authData.user) {
+        // Create profile in profiles table
+        const profileResult = await createUserProfile({
+          id: authData.user.id,
+          email: authData.user.email!,
+          full_name: fullName,
+          phone: phone,
+        });
+
+        if (profileResult.success) {
+          console.log("✅ Profile created successfully!");
+        } else {
+          console.warn("⚠️ Profile creation failed, but signup succeeded");
+        }
+
         // Check if email confirmation is required
         if (authData.session) {
           // User is logged in immediately (email confirmation disabled)
@@ -322,6 +338,9 @@ export default function SignupPage() {
               cursor: loading ? "not-allowed" : "pointer",
               transition: "all 0.3s",
               boxShadow: loading ? "none" : "0 4px 12px rgba(22, 163, 74, 0.3)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
             onMouseEnter={(e) => {
               if (!loading) {
@@ -338,6 +357,7 @@ export default function SignupPage() {
               }
             }}
           >
+            {loading && <ButtonSpinner />}
             {loading ? "Creating Account..." : "Create Account"}
           </button>
         </form>

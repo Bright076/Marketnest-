@@ -2,7 +2,12 @@
 
 import { ReactNode } from "react";
 import { CartProvider } from "./context/CartContext";
+import { LoadingProvider } from "./context/LoadingContext";
 
 export default function Providers({ children }: { children: ReactNode }) {
-  return <CartProvider>{children}</CartProvider>;
+  return (
+    <LoadingProvider>
+      <CartProvider>{children}</CartProvider>
+    </LoadingProvider>
+  );
 }

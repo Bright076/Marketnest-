@@ -1,155 +1,386 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useCart } from "../context/CartContext";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+
+interface Product {
+  id: string;
+  title: string;
+  image_url: string;
+  selling_price: number;
+}
 
 export default function CheckoutPage() {
-  const { cart, cartTotal } = useCart();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const productId = searchParams.get('product');
+  const quantity = parseInt(searchParams.get('quantity') || '1');
 
-  // Redirect if cart is empty
-  useEffect(() => {
-    if (cart.length === 0) {
-      router.push("/cart");
-    }
-  }, [cart, router]);
-
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    country: "",
-    stateCity: "",
-    address: "",
-    postalCode: "",
+    customer_name: "",
+    customer_phone: "",
+    customer_address: ""
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  useEffect(() => {
+    checkAuthAndLoadProduct();
+  }, [productId]);
 
-  const handlePaymentConfirm = () => {
-    if (!formData.fullName || !formData.phone || !formData.address) {
-      alert("Please fill out the required delivery info (Name, Phone, Address) before confirming payment.");
-      return;
+  const checkAuthAndLoadProduct = async () => {
+    try {
+      // Check if user is logged in
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        alert("Please login to checkout");
+        router.push("/login");
+        return;
+      }
+
+      // Load user profile to pre-fill form
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profile) {
+        setFormData({
+          customer_name: profile.full_name || "",
+          customer_phone: profile.phone || "",
+          customer_address: ""
+        });
+      }
+
+      // Load product
+      if (productId) {
+        const { data, error } = await supabase
+          .from('products')
+          .select('id, title, image_url, selling_price')
+          .eq('id', productId)
+          .single();
+
+        if (error) throw error;
+        setProduct(data);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to load checkout');
+      router.push('/products');
+    } finally {
+      setLoading(false);
     }
-
-    let orderText = "Hello, I have paid for my order.\\n\\n*Order Details:*\\n";
-    cart.forEach((item) => {
-      orderText += `- ${item.name} x${item.quantity}\\n`;
-    });
-    orderText += `\\n*Total Amount:* $${cartTotal.toFixed(2)}\\n`;
-    orderText += `*Status:* Payment claimed\\n\\n`;
-    
-    orderText += `*Customer details:*\\n`;
-    orderText += `Name: ${formData.fullName}\\n`;
-    orderText += `Phone: ${formData.phone}\\n`;
-    orderText += `Email: ${formData.email}\\n`;
-    
-    orderText += `\\n*Delivery Address:*\\n`;
-    orderText += `${formData.address}\\n`;
-    orderText += `${formData.stateCity}, ${formData.postalCode}\\n`;
-    orderText += `${formData.country}`;
-
-    const encoded = encodeURIComponent(orderText);
-    window.location.href = `https://wa.me/234XXXXXXXXXX?text=${encoded}`;
   };
 
-  if (cart.length === 0) return null;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user || !product) {
+        throw new Error("Missing user or product");
+      }
+
+      const totalAmount = Number(product.selling_price) * quantity;
+
+      // Create order
+      const { data: order, error } = await supabase
+        .from('orders')
+        .insert([
+          {
+            user_id: user.id,
+            product_id: product.id,
+            customer_name: formData.customer_name,
+            customer_phone: formData.customer_phone,
+            customer_address: formData.customer_address,
+            amount_paid: totalAmount,
+            payment_status: 'pending',
+            order_status: 'pending'
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update product stock (reduce by quantity ordered)
+      const { data: currentProduct } = await supabase
+        .from('products')
+        .select('stock')
+        .eq('id', product.id)
+        .single();
+
+      if (currentProduct && currentProduct.stock > 0) {
+        const newStock = Math.max(0, currentProduct.stock - quantity);
+        await supabase
+          .from('products')
+          .update({ stock: newStock })
+          .eq('id', product.id);
+      }
+
+      // Redirect to success page
+      router.push(`/orders/success?order=${order.id}`);
+    } catch (error: any) {
+      console.error('Error creating order:', error);
+      alert('Failed to create order: ' + error.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: "100vh", paddingTop: "60px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{
+            width: "60px",
+            height: "60px",
+            border: "4px solid #e5e7eb",
+            borderTop: "4px solid #16a34a",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+            margin: "0 auto 1rem"
+          }} />
+          <p style={{ color: "#6b7280" }}>Loading checkout...</p>
+        </div>
+        <style dangerouslySetInnerHTML={{__html: `
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}} />
+      </div>
+    );
+  }
+
+  if (!product) {
+    return null;
+  }
+
+  const totalAmount = Number(product.selling_price) * quantity;
 
   return (
-    <section style={{ maxWidth: "1200px", margin: "0 auto", padding: "3rem 1.5rem", minHeight: "80vh" }}>
-      <h1 style={{ marginBottom: "2rem", fontSize: "2rem" }}>Secure Checkout</h1>
+    <div style={{ minHeight: "100vh", paddingTop: "60px", background: "#f9fafb" }}>
+      <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "2rem 1.5rem" }}>
+        <h1 style={{ fontSize: "2.5rem", fontWeight: 900, color: "#111827", marginBottom: "2rem" }}>
+          Checkout
+        </h1>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "3rem" }}>
-        
-        {/* Delivery Details Form */}
-        <div>
-          <h2 style={{ fontSize: "1.4rem", marginBottom: "1.5rem", borderBottom: "1px solid #e5e7eb", paddingBottom: "0.5rem" }}>Delivery Information</h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            <div>
-              <label style={{ display: "block", marginBottom: "0.4rem", fontSize: "0.9rem", fontWeight: 500 }}>Full Name *</label>
-              <input type="text" name="fullName" onChange={handleChange} required style={{ width: "100%", padding: "0.75rem", borderRadius: "8px", border: "1px solid #d1d5db" }} />
-            </div>
-            
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-              <div>
-                <label style={{ display: "block", marginBottom: "0.4rem", fontSize: "0.9rem", fontWeight: 500 }}>Email Address</label>
-                <input type="email" name="email" onChange={handleChange} style={{ width: "100%", padding: "0.75rem", borderRadius: "8px", border: "1px solid #d1d5db" }} />
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+          gap: "2rem"
+        }}>
+          {/* Order Form */}
+          <div style={{
+            background: "#ffffff",
+            padding: "2rem",
+            borderRadius: "16px",
+            border: "1px solid #e5e7eb"
+          }}>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#111827", marginBottom: "1.5rem" }}>
+              Delivery Information
+            </h2>
+
+            <form onSubmit={handleSubmit}>
+              {/* Full Name */}
+              <div style={{ marginBottom: "1.5rem" }}>
+                <label style={{
+                  display: "block",
+                  fontSize: "0.9rem",
+                  fontWeight: 600,
+                  color: "#374151",
+                  marginBottom: "0.5rem"
+                }}>
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.customer_name}
+                  onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem 1rem",
+                    border: "2px solid #e5e7eb",
+                    borderRadius: "8px",
+                    fontSize: "1rem",
+                    outline: "none"
+                  }}
+                />
               </div>
-              <div>
-                <label style={{ display: "block", marginBottom: "0.4rem", fontSize: "0.9rem", fontWeight: 500 }}>Phone / WhatsApp *</label>
-                <input type="tel" name="phone" onChange={handleChange} required style={{ width: "100%", padding: "0.75rem", borderRadius: "8px", border: "1px solid #d1d5db" }} />
+
+              {/* Phone */}
+              <div style={{ marginBottom: "1.5rem" }}>
+                <label style={{
+                  display: "block",
+                  fontSize: "0.9rem",
+                  fontWeight: 600,
+                  color: "#374151",
+                  marginBottom: "0.5rem"
+                }}>
+                  Phone Number *
+                </label>
+                <input
+                  type="tel"
+                  required
+                  value={formData.customer_phone}
+                  onChange={(e) => setFormData({ ...formData, customer_phone: e.target.value })}
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem 1rem",
+                    border: "2px solid #e5e7eb",
+                    borderRadius: "8px",
+                    fontSize: "1rem",
+                    outline: "none"
+                  }}
+                />
+              </div>
+
+              {/* Address */}
+              <div style={{ marginBottom: "2rem" }}>
+                <label style={{
+                  display: "block",
+                  fontSize: "0.9rem",
+                  fontWeight: 600,
+                  color: "#374151",
+                  marginBottom: "0.5rem"
+                }}>
+                  Delivery Address *
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={formData.customer_address}
+                  onChange={(e) => setFormData({ ...formData, customer_address: e.target.value })}
+                  placeholder="Enter your full delivery address"
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem 1rem",
+                    border: "2px solid #e5e7eb",
+                    borderRadius: "8px",
+                    fontSize: "1rem",
+                    outline: "none",
+                    resize: "vertical"
+                  }}
+                />
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={submitting}
+                style={{
+                  width: "100%",
+                  padding: "1rem",
+                  background: submitting ? "#9ca3af" : "linear-gradient(135deg, #16a34a 0%, #059669 100%)",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "12px",
+                  fontSize: "1.1rem",
+                  fontWeight: 700,
+                  cursor: submitting ? "not-allowed" : "pointer",
+                  boxShadow: submitting ? "none" : "0 4px 12px rgba(22, 163, 74, 0.3)"
+                }}
+              >
+                {submitting ? "Processing..." : "Place Order"}
+              </button>
+            </form>
+          </div>
+
+          {/* Order Summary */}
+          <div style={{
+            background: "#ffffff",
+            padding: "2rem",
+            borderRadius: "16px",
+            border: "1px solid #e5e7eb",
+            height: "fit-content"
+          }}>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#111827", marginBottom: "1.5rem" }}>
+              Order Summary
+            </h2>
+
+            {/* Product Info */}
+            <div style={{
+              display: "flex",
+              gap: "1rem",
+              marginBottom: "1.5rem",
+              padding: "1rem",
+              background: "#f9fafb",
+              borderRadius: "12px"
+            }}>
+              {product.image_url && (
+                <img
+                  src={product.image_url}
+                  alt={product.title}
+                  style={{
+                    width: "80px",
+                    height: "80px",
+                    objectFit: "contain",
+                    borderRadius: "8px"
+                  }}
+                />
+              )}
+              <div style={{ flex: 1 }}>
+                <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827", marginBottom: "0.5rem" }}>
+                  {product.title}
+                </h3>
+                <p style={{ fontSize: "0.9rem", color: "#6b7280" }}>
+                  Quantity: {quantity}
+                </p>
+                <p style={{ fontSize: "1.25rem", fontWeight: 700, color: "#16a34a", marginTop: "0.5rem" }}>
+                  ${Number(product.selling_price).toFixed(2)} each
+                </p>
               </div>
             </div>
 
-            <div>
-              <label style={{ display: "block", marginBottom: "0.4rem", fontSize: "0.9rem", fontWeight: 500 }}>Full Street Address *</label>
-              <input type="text" name="address" onChange={handleChange} required style={{ width: "100%", padding: "0.75rem", borderRadius: "8px", border: "1px solid #d1d5db" }} />
+            {/* Price Breakdown */}
+            <div style={{ borderTop: "2px solid #e5e7eb", paddingTop: "1.5rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.75rem" }}>
+                <span style={{ color: "#6b7280" }}>Subtotal</span>
+                <span style={{ fontWeight: 600, color: "#111827" }}>${totalAmount.toFixed(2)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1.5rem" }}>
+                <span style={{ color: "#6b7280" }}>Delivery</span>
+                <span style={{ fontWeight: 600, color: "#16a34a" }}>FREE</span>
+              </div>
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                padding: "1rem",
+                background: "#f0fdf4",
+                borderRadius: "8px",
+                border: "2px solid #bbf7d0"
+              }}>
+                <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "#166534" }}>Total</span>
+                <span style={{ fontSize: "1.5rem", fontWeight: 900, color: "#16a34a" }}>
+                  ${totalAmount.toFixed(2)}
+                </span>
+              </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem" }}>
-              <div>
-                <label style={{ display: "block", marginBottom: "0.4rem", fontSize: "0.9rem", fontWeight: 500 }}>City / State</label>
-                <input type="text" name="stateCity" onChange={handleChange} style={{ width: "100%", padding: "0.75rem", borderRadius: "8px", border: "1px solid #d1d5db" }} />
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: "0.4rem", fontSize: "0.9rem", fontWeight: 500 }}>Postal Code</label>
-                <input type="text" name="postalCode" onChange={handleChange} style={{ width: "100%", padding: "0.75rem", borderRadius: "8px", border: "1px solid #d1d5db" }} />
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: "0.4rem", fontSize: "0.9rem", fontWeight: 500 }}>Country</label>
-                <input type="text" name="country" onChange={handleChange} style={{ width: "100%", padding: "0.75rem", borderRadius: "8px", border: "1px solid #d1d5db" }} />
-              </div>
+            {/* Payment Info */}
+            <div style={{
+              marginTop: "1.5rem",
+              padding: "1rem",
+              background: "#fef3c7",
+              borderRadius: "8px",
+              border: "1px solid #fde047"
+            }}>
+              <p style={{ fontSize: "0.85rem", color: "#92400e", margin: 0 }}>
+                💳 Payment will be collected upon delivery
+              </p>
             </div>
           </div>
-        </div>
-
-        {/* Order Summary & Payment Section */}
-        <div>
-          <div style={{ background: "#f8fafc", padding: "2rem", borderRadius: "12px", border: "1px solid #e5e7eb", marginBottom: "2rem" }}>
-            <h2 style={{ fontSize: "1.4rem", marginBottom: "1.5rem" }}>Order Summary</h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>
-              {cart.map((item) => (
-                <div key={item.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.95rem" }}>
-                  <span>{item.name} <span style={{ color: "#6b7280" }}>x{item.quantity}</span></span>
-                  <span style={{ fontWeight: 600 }}>{item.price}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "1rem", borderTop: "1px solid #d1d5db", fontSize: "1.2rem", fontWeight: 800 }}>
-               <span>Total to Pay</span>
-               <span>${cartTotal.toFixed(2)}</span>
-            </div>
-          </div>
-
-          <div style={{ background: "#fff", padding: "2rem", borderRadius: "12px", border: "2px solid #16a34a" }}>
-            <h2 style={{ fontSize: "1.3rem", marginBottom: "1rem", color: "#166534" }}>Pay via Bank Transfer (Wise)</h2>
-            <p style={{ fontSize: "0.95rem", color: "#4b5563", marginBottom: "1.5rem" }}>
-              Please transfer exactly <strong>${cartTotal.toFixed(2)}</strong> to the following account details to complete your order.
-            </p>
-            
-            <div style={{ background: "#f3f4f6", padding: "1.5rem", borderRadius: "8px", marginBottom: "1.5rem" }}>
-              <div style={{ marginBottom: "0.5rem" }}><span style={{ color: "#6b7280", fontSize: "0.85rem", display: "inline-block", width: "120px" }}>Account Name:</span> <strong style={{ fontFamily: "monospace", fontSize: "0.95rem" }}>MarketNest Global Ltd</strong></div>
-              <div style={{ marginBottom: "0.5rem" }}><span style={{ color: "#6b7280", fontSize: "0.85rem", display: "inline-block", width: "120px" }}>Account Number:</span> <strong style={{ fontFamily: "monospace", fontSize: "0.95rem" }}>1234 5678 9012</strong></div>
-              <div><span style={{ color: "#6b7280", fontSize: "0.85rem", display: "inline-block", width: "120px" }}>Bank Country:</span> <strong style={{ fontSize: "0.95rem" }}>United States (US)</strong></div>
-            </div>
-
-            <p style={{ fontSize: "0.85rem", color: "#6b7280", fontStyle: "italic", marginBottom: "1.5rem", lineHeight: 1.5 }}>
-              Instruction: After payment, click &quot;I Have Paid&quot; below to confirm your order and send your details to our WhatsApp team.
-            </p>
-
-            <button
-              onClick={handlePaymentConfirm}
-              style={{ width: "100%", padding: "1.1rem", background: "#16a34a", color: "white", border: "none", borderRadius: "8px", fontSize: "1.1rem", fontWeight: 700, cursor: "pointer", transition: "background 0.2s" }}
-            >
-              ✅ I Have Paid
-            </button>
-          </div>
-
         </div>
       </div>
-    </section>
+    </div>
   );
 }

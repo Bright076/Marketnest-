@@ -4,6 +4,7 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ButtonSpinner } from "../components/LoadingSpinner";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -216,6 +217,9 @@ export default function LoginPage() {
               cursor: loading ? "not-allowed" : "pointer",
               transition: "all 0.3s",
               boxShadow: loading ? "none" : "0 4px 12px rgba(22, 163, 74, 0.3)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
             onMouseEnter={(e) => {
               if (!loading) {
@@ -232,6 +236,7 @@ export default function LoginPage() {
               }
             }}
           >
+            {loading && <ButtonSpinner />}
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>

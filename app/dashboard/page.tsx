@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { checkAdminAccess } from "@/lib/adminAuth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -33,6 +34,15 @@ export default function DashboardPage() {
 
       if (!user) {
         router.push("/login");
+        return;
+      }
+
+      // Check if user is admin
+      const { isAdmin } = await checkAdminAccess();
+      
+      if (isAdmin) {
+        // Redirect admins to admin dashboard
+        router.push("/admin");
         return;
       }
 
