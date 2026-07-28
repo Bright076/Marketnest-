@@ -16,7 +16,7 @@ export default function AdminLayout({
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    verifyAdmin();
+    verifyAdmin();  
   }, []);
 
   const verifyAdmin = async () => {
@@ -125,6 +125,29 @@ export default function AdminLayout({
             <span>📊</span> Dashboard
           </Link>
 
+          <Link href="/admin/cj-products" style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.75rem",
+            padding: "0.75rem 1rem",
+            borderRadius: "8px",
+            textDecoration: "none",
+            color: "#374151",
+            fontWeight: 600,
+            marginBottom: "0.5rem",
+            transition: "all 0.2s"
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "#f0fdf4";
+            e.currentTarget.style.color = "#16a34a";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.color = "#374151";
+          }}>
+            <span>🌍</span> CJ Products
+          </Link>
+
           <Link href="/admin/products" style={{
             display: "flex",
             alignItems: "center",
@@ -145,7 +168,7 @@ export default function AdminLayout({
             e.currentTarget.style.background = "transparent";
             e.currentTarget.style.color = "#374151";
           }}>
-            <span>📦</span> Products
+            <span>📦</span> My Products
           </Link>
 
           <Link href="/admin/orders" style={{
@@ -169,6 +192,29 @@ export default function AdminLayout({
             e.currentTarget.style.color = "#374151";
           }}>
             <span>🛒</span> Orders
+          </Link>
+
+          <Link href="/admin/cj-test" style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.75rem",
+            padding: "0.75rem 1rem",
+            borderRadius: "8px",
+            textDecoration: "none",
+            color: "#374151",
+            fontWeight: 600,
+            marginBottom: "0.5rem",
+            transition: "all 0.2s"
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "#f0fdf4";
+            e.currentTarget.style.color = "#16a34a";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.color = "#374151";
+          }}>
+            <span>🔌</span> CJ API Test
           </Link>
 
           <Link href="/" style={{

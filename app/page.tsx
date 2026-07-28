@@ -1,26 +1,50 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import HeroSection from "./components/HeroSection";
 import ProductCard from "./components/ProductCard";
-import CategoryBar from "./components/CategoryBar";
-import { products } from "./data/products";
+import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 
-export default function Home() {
-  const [selectedCategory, setSelectedCategory] = useState("all");
+interface Product {
+  id: string;
+  title: string;
+  selling_price: number;
+  image_url: string;
+  stock: number;
+  category: string;
+}
 
-  // Filter products based on selected category
-  const filteredProducts = selectedCategory === "all" 
-    ? products 
-    : products.filter(product => product.category === selectedCategory);
+export default function Home() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    try {
+      // Load only CJ products from database
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('product_type', 'cj')
+        .gt('stock', 0) // Only show products with stock
+        .order('created_at', { ascending: false })
+        .limit(8); // Show first 8 products
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error loading products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <>
-      <CategoryBar 
-        selectedCategory={selectedCategory} 
-        onCategoryChange={setSelectedCategory}
-      />
       <HeroSection />
 
       {/* Featured Products Section */}
@@ -54,7 +78,7 @@ export default function Home() {
               Featured Products
             </h2>
             <p style={{ color: "#6b7280", fontSize: "0.95rem", margin: 0 }}>
-              Hand-picked products just for you
+              Quality products from around the world
             </p>
           </div>
           <Link
@@ -77,39 +101,62 @@ export default function Home() {
           </Link>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-            gap: "1.75rem",
-          }}
-        >
-          {filteredProducts.length > 0 ? (
-            filteredProducts.map((product) => (
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "3rem", color: "#6b7280" }}>
+            <div style={{
+              width: "60px",
+              height: "60px",
+              border: "4px solid #e5e7eb",
+              borderTop: "4px solid #16a34a",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+              margin: "0 auto 1rem"
+            }} />
+            <p>Loading products...</p>
+            <style dangerouslySetInnerHTML={{__html: `
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            `}} />
+          </div>
+        ) : products.length > 0 ? (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+              gap: "1.75rem",
+            }}
+          >
+            {products.map((product) => (
               <ProductCard
                 key={product.id}
-                name={product.name}
-                price={product.price}
-                image={product.image}
-                type={product.type}
+                id={parseInt(product.id)}
+                name={product.title}
+                price={`$${product.selling_price.toFixed(2)}`}
+                image={product.image_url}
+                type="cj"
               />
-            ))
-          ) : (
-            <div style={{ 
-              gridColumn: "1 / -1", 
-              textAlign: "center", 
-              padding: "3rem",
-              color: "#6b7280"
-            }}>
-              <p style={{ fontSize: "1.2rem", fontWeight: 600, marginBottom: "0.5rem" }}>
-                No products found in this category
-              </p>
-              <p style={{ fontSize: "0.9rem" }}>
-                Try selecting a different category or view all products
-              </p>
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ 
+            textAlign: "center", 
+            padding: "3rem",
+            color: "#6b7280",
+            background: "#f9fafb",
+            borderRadius: "16px",
+            border: "2px dashed #e5e7eb"
+          }}>
+            <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>📦</div>
+            <p style={{ fontSize: "1.2rem", fontWeight: 600, marginBottom: "0.5rem", color: "#111827" }}>
+              No products available yet
+            </p>
+            <p style={{ fontSize: "0.9rem" }}>
+              Products will appear here once the admin imports them from CJDropShipping
+            </p>
+          </div>
+        )}
       </section>
 
       {/* Trust Banner */}
@@ -132,10 +179,10 @@ export default function Home() {
           }}
         >
           {[
-            { icon: "🚚", title: "Fast Delivery", desc: "1–2 business days" },
+            { icon: "🚚", title: "Fast Delivery", desc: "7-15 business days" },
             { icon: "🛡️", title: "Secure Shopping", desc: "100% protected" },
-            { icon: "💬", title: "24/7 Support", desc: "WhatsApp & Email" },
-            { icon: "↩️", title: "Easy Returns", desc: "30-day policy" },
+            { icon: "💬", title: "24/7 Support", desc: "Email support" },
+            { icon: "🌍", title: "Global Products", desc: "Worldwide shipping" },
           ].map((item) => (
             <div key={item.title} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
               <span style={{ fontSize: "1.8rem" }}>{item.icon}</span>

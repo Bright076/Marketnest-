@@ -11,23 +11,9 @@ export default function CartPage() {
 
   const handleCheckout = () => {
     if (cart.length === 0) return;
-
-    const hasCJProduct = cart.some((item) => item.type === "cj");
-
-    if (hasCJProduct) {
-      // Directs to standard form checkout path
-      router.push("/checkout");
-    } else {
-      // 100% Local Product order skips checkout
-      let orderText = "Hello, I want to order:\\n";
-      cart.forEach((item) => {
-        orderText += `- ${item.name} x${item.quantity}\\n`;
-      });
-      orderText += `\\nTotal: $${cartTotal.toFixed(2)}`;
-      
-      const encoded = encodeURIComponent(orderText);
-      window.location.href = `https://wa.me/234XXXXXXXXXX?text=${encoded}`;
-    }
+    
+    // Redirect to checkout page for CJ products
+    router.push("/checkout");
   };
 
   if (cart.length === 0) {
@@ -54,8 +40,8 @@ export default function CartPage() {
                 <h4 style={{ margin: "0 0 0.5rem 0", fontSize: "1.1rem" }}>{item.name}</h4>
                 <div style={{ color: "#6b7280", fontSize: "0.9rem", fontWeight: 600 }}>{item.price}</div>
                 <div style={{ marginTop: "0.5rem" }}>
-                  <span style={{ fontSize: "0.75rem", padding: "3px 8px", borderRadius: "6px", background: item.type === "local" ? "#dcfce7" : "#ffedd5", color: item.type === "local" ? "#166534" : "#9a3412", fontWeight: 700 }}>
-                    {item.type === "local" ? "LOCAL" : "GLOBAL"}
+                  <span style={{ fontSize: "0.75rem", padding: "3px 8px", borderRadius: "6px", background: "#ffedd5", color: "#9a3412", fontWeight: 700 }}>
+                    CJ PRODUCT
                   </span>
                 </div>
               </div>
@@ -93,10 +79,10 @@ export default function CartPage() {
             onClick={handleCheckout}
             style={{ width: "100%", padding: "1rem", background: "#111827", color: "white", border: "none", borderRadius: "8px", fontSize: "1.1rem", fontWeight: 700, cursor: "pointer", transition: "background 0.2s" }}
           >
-            {cart.some(i => i.type === "cj") ? "Proceed to Secure Checkout" : "Order via WhatsApp"}
+            Proceed to Checkout
           </button>
           <div style={{ textAlign: "center", marginTop: "1rem", fontSize: "0.85rem", color: "#6b7280" }}>
-             {cart.some(i => i.type === "cj") ? "Contains Global items. Full checkout required." : "All items are Local. Fast checkout via WhatsApp!"}
+            Secure checkout with multiple payment options
           </div>
         </div>
       </div>

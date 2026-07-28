@@ -59,8 +59,9 @@ export default function ProductDetailsPage() {
       return;
     }
 
-    // Redirect to checkout with product info
-    router.push(`/checkout?product=${productId}&quantity=${quantity}`);
+    // Add to cart and redirect to cart
+    // Note: Cart functionality should handle adding the product
+    router.push("/cart");
   };
 
   if (loading) {
@@ -157,10 +158,10 @@ export default function ProductDetailsPage() {
                   borderRadius: "8px",
                   fontSize: "0.9rem",
                   fontWeight: 700,
-                  background: product.product_type === 'local' ? '#dcfce7' : '#dbeafe',
-                  color: product.product_type === 'local' ? '#166534' : '#1e40af'
+                  background: '#fff7ed',
+                  color: '#9a3412'
                 }}>
-                  {product.product_type === 'local' ? '🇳🇬 Local Product' : '🌍 Global Product'}
+                  🌍 CJ Product
                 </div>
               </div>
             </div>

@@ -1,94 +1,190 @@
-# 🚀 MarketNest Quick Reference
+# 🚀 CJDropShipping MarketNest - Quick Reference
 
-## Product Types at a Glance
+## 🔧 Setup (First Time)
 
-### 🇳🇬 Local Products
-- **Add:** Manual entry by admin
-- **Price:** Set by admin (no calculator)
-- **Button:** "Message on WhatsApp"
-- **Order:** WhatsApp chat
-- **Admin:** Full CRUD (add, edit, delete)
+### 1. Database Migration
+```sql
+-- Run in Supabase SQL Editor
 
-### 🌍 CJ Products
-- **Add:** From CJDropShipping API (future)
-- **Price:** Auto-calculated (supplier + markup%)
-- **Button:** "Add to Cart"
-- **Order:** Cart → Checkout → Payment
-- **Admin:** View only (no edit/delete)
+-- Add CJ product tracking (if not done)
+ALTER TABLE products ADD COLUMN IF NOT EXISTS cj_pid TEXT;
 
----
-
-## Quick Commands
-
-### Add Local Product
-1. `/admin/products/add`
-2. Select "🇳🇬 Local Product"
-3. Enter selling price manually
-4. Save
-
-### Add CJ Product (Testing)
-1. `/admin/products/add`
-2. Select "🌍 CJ Product"
-3. Enter supplier price + markup%
-4. Selling price auto-calculates
-5. Save
-
-### Filter Products
-- `/admin/products` → Use filter tabs
-- All | Local | CJ
-
----
-
-## Button Behavior
-
-| Product Type | Button Text | Action |
-|--------------|-------------|--------|
-| Local | "Message on WhatsApp" | Opens WhatsApp |
-| CJ | "Add to Cart" | Adds to cart |
-
----
-
-## Pricing
-
-### Local
-```
-Selling Price = $100 (manual)
+-- Add payment fields to orders
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'USD';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method TEXT;
 ```
 
-### CJ
+### 2. Environment Variables
+```env
+CJ_API_KEY=your_key_here
+NEXT_PUBLIC_SUPABASE_URL=your_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key
 ```
-Supplier: $10,000
-Markup: 40%
-Selling: $14,000 (auto)
+
+### 3. Start Server
+```bash
+npm run dev
 ```
 
 ---
 
-## Admin Actions
+## 🎯 Admin Workflow
 
-| Action | Local | CJ |
-|--------|-------|-----|
-| Add | ✅ Yes | 🚧 API only |
-| Edit | ✅ Yes | ❌ No |
-| Delete | ✅ Yes | ❌ No |
-| View | ✅ Yes | ✅ Yes |
+### Import Products:
+1. `/admin/cj-products` → Search CJ products
+2. Click "Add to My Store" on any product
+3. Set profit amount (e.g., $10)
+4. Click "Import to Store"
 
----
+### Manage Products:
+1. `/admin/products` → View imported CJ products
+2. Click "Edit Profit" → Update profit margin
+3. Click "Delete" → Remove product
 
-## Files Changed
-
-1. `app/components/ProductCard.tsx`
-2. `app/admin/products/add/page.tsx`
-3. `app/admin/products/page.tsx`
-
----
-
-## Documentation
-
-- **Full Guide:** `PRODUCT_TYPES_GUIDE.md`
-- **Update Summary:** `PRODUCT_UPDATE_SUMMARY.md`
-- **This Reference:** `QUICK_REFERENCE.md`
+### View Orders:
+1. `/admin/orders` → See all orders
+2. Check `currency` and `payment_method` columns
+3. Verify payment and update order status
 
 ---
 
-**Status:** ✅ Ready to use!
+## 🛒 Customer Workflow
+
+### Browse & Purchase:
+1. `/products` → Browse CJ products
+2. Click product → View details
+3. "Add to Cart" → Add multiple products
+4. `/cart` → Review items
+5. "Proceed to Checkout"
+
+### Checkout:
+1. Fill customer information form
+2. Select **Country**:
+   - Nigeria → Auto-selects Bank Transfer (NGN)
+   - USA/Other → Auto-selects Crypto (USDT)
+3. Enter delivery address
+4. Click "Place Order"
+5. Redirected to success page
+
+---
+
+## 💰 Pricing Logic
+
+```
+Supplier Price (from CJ) = $50
++ Profit Amount (set by admin) = $10
+─────────────────────────────────
+= Selling Price (shown to customer) = $60
+```
+
+**Customer sees**: Only $60
+**Admin sees**: Supplier price, profit, and selling price
+
+---
+
+## 💳 Payment Methods
+
+| Customer Location | Payment | Currency | Rate |
+|------------------|---------|----------|------|
+| Nigeria 🇳🇬 | Bank Transfer | NGN | 1500 NGN per USD |
+| International 🌍 | Crypto | USDT | 1:1 with USD |
+
+---
+
+## 📊 Database Schema
+
+### Products Table:
+- `id`, `title`, `description`, `image_url`
+- `supplier_price` - From CJ API
+- `profit_amount` - Set by admin
+- `selling_price` - Supplier + Profit
+- `stock`, `category`
+- `product_type` - Always 'cj'
+- `cj_pid` - CJ Product ID (unique)
+
+### Orders Table:
+- `id`, `user_id`, `product_id`
+- `customer_name`, `customer_phone`, `customer_address`
+- `amount_paid` - In selected currency
+- `currency` - 'USD', 'NGN', or 'USDT'
+- `payment_method` - 'bank_transfer' or 'crypto'
+- `payment_status` - 'pending', 'paid', 'failed'
+- `order_status` - 'pending', 'processing', 'shipped', 'delivered'
+
+---
+
+## 🔍 Common Issues
+
+### Products not showing?
+→ Import products from `/admin/cj-products` first
+
+### Checkout redirects to login?
+→ Login as customer first at `/login`
+
+### Currency field missing in orders?
+→ Run `ORDERS_TABLE_UPDATE.sql` in Supabase
+
+### Cart empty after refresh?
+→ Normal - cart uses browser localStorage
+
+---
+
+## 📂 Key Files
+
+| File | Purpose |
+|------|---------|
+| `app/admin/cj-products/page.tsx` | Search & import CJ products |
+| `app/admin/products/page.tsx` | Manage imported products |
+| `app/products/page.tsx` | Store front (CJ only) |
+| `app/cart/page.tsx` | Shopping cart |
+| `app/checkout/page.tsx` | Complete checkout |
+| `lib/cjService.ts` | CJ API functions |
+
+---
+
+## 🎨 Color Scheme
+
+- **CJ Products**: Orange (#f97316)
+- **Success/Green**: #16a34a
+- **Nigeria**: Green (#16a34a)
+- **International**: Blue (#3b82f6)
+
+---
+
+## 📞 Quick Commands
+
+```bash
+# Start dev server
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production
+npm start
+
+# Check for errors
+npm run lint
+```
+
+---
+
+## ✅ Testing Checklist
+
+**Admin:**
+- [ ] Import CJ product
+- [ ] Edit profit amount
+- [ ] Delete product
+- [ ] View orders
+
+**Customer:**
+- [ ] Browse products
+- [ ] View product details
+- [ ] Add to cart (multiple)
+- [ ] Checkout (Nigeria)
+- [ ] Checkout (International)
+- [ ] Verify order in database
+
+---
+
+**For Full Documentation**: See `CJ_TRANSFORMATION_COMPLETE.md`

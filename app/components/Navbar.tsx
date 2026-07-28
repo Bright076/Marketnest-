@@ -11,9 +11,11 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { totalItems } = useCart();
 
   useEffect(() => {
+    setMounted(true);
     checkUser();
     
     // Listen for auth state changes
@@ -100,6 +102,7 @@ export default function Navbar() {
               height={48}
               style={{ objectFit: "contain", height: "auto", maxHeight: "48px", maxWidth: "50vw" }}
               priority
+              unoptimized
             />
           </Link>
 
@@ -114,13 +117,10 @@ export default function Navbar() {
               Home
             </Link>
             <Link href="/products" style={{ textDecoration: "none", color: "#374151", fontWeight: 600, fontSize: "0.95rem" }}>
-              All Products
+              Products
             </Link>
-            <Link href="/products/local" style={{ textDecoration: "none", color: "#16a34a", fontWeight: 600, fontSize: "0.95rem" }}>
-              Local Deals 🇳🇬
-            </Link>
-            <Link href="/products/global" style={{ textDecoration: "none", color: "#f97316", fontWeight: 600, fontSize: "0.95rem" }}>
-              Global Deals 🌍
+            <Link href="/cart" style={{ textDecoration: "none", color: "#374151", fontWeight: 600, fontSize: "0.95rem" }}>
+              Cart
             </Link>
           </div>
 
@@ -174,7 +174,7 @@ export default function Navbar() {
               <svg width="26" height="26" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
               </svg>
-              {totalItems > 0 && (
+              {mounted && totalItems > 0 && (
                 <span style={{ position: "absolute", top: "0px", right: "0px", background: "#ef4444", color: "white", borderRadius: "9999px", padding: "0.15rem 0.45rem", fontSize: "0.7rem", fontWeight: 800 }}>
                   {totalItems}
                 </span>
@@ -257,21 +257,14 @@ export default function Navbar() {
               onClick={() => setMobileOpen(false)}
               style={{ textDecoration: "none", color: "#374151", fontWeight: 600, fontSize: "1.1rem", padding: "0.5rem 0", borderBottom: "1px solid #f3f4f6" }}
             >
-              All Products
+              Products
             </Link>
             <Link
-              href="/products/local"
+              href="/cart"
               onClick={() => setMobileOpen(false)}
-              style={{ textDecoration: "none", color: "#16a34a", fontWeight: 600, fontSize: "1.1rem", padding: "0.5rem 0", borderBottom: "1px solid #f3f4f6" }}
+              style={{ textDecoration: "none", color: "#374151", fontWeight: 600, fontSize: "1.1rem", padding: "0.5rem 0" }}
             >
-              Local Deals 🇳🇬
-            </Link>
-            <Link
-              href="/products/global"
-              onClick={() => setMobileOpen(false)}
-              style={{ textDecoration: "none", color: "#f97316", fontWeight: 600, fontSize: "1.1rem", padding: "0.5rem 0" }}
-            >
-              Global Deals 🌍
+              Cart {mounted && totalItems > 0 && `(${totalItems})`}
             </Link>
           </div>
         )}
