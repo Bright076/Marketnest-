@@ -11,7 +11,7 @@ interface ProductCardProps {
   name: string;
   price: string;
   image: string;
-  type: "cj";
+  type: "local" | "cj";
   description?: string;
   category?: string;
 }
