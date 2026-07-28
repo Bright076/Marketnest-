@@ -13,6 +13,7 @@ interface ProductCardProps {
   image: string;
   type: "cj";
   description?: string;
+  category?: string;
 }
 
 export default function ProductCard({
@@ -22,6 +23,7 @@ export default function ProductCard({
   image,
   type,
   description,
+  category = "electronics",
 }: ProductCardProps) {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -53,7 +55,7 @@ export default function ProductCard({
       }
       
       // User is logged in - proceed with adding to cart
-      addToCart({ id, name, price, image, type, description });
+      addToCart({ id, name, price, image, type, description, category });
       alert(`🛒 Added "${name}" to cart!`);
     } finally {
       setIsLoading(false);
