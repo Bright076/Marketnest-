@@ -2,22 +2,35 @@
 // Just fetch and return raw data - no database saving
 
 import { NextResponse } from "next/server";
-import { makeCJRequest } from "@/lib/cjService";
+import { authenticateCJ } from "@/lib/cjService";
 
 export async function GET() {
   try {
     console.log("Starting CJ product fetch test...");
 
-    // Fetch products - try generic electronics search
-    const result = await makeCJRequest("/product/list", {
-      method: "POST",
-      body: {
-        productName: "",  // Empty = get any products
-        categoryId: "",
-        pageNum: 1,
-        pageSize: 10,
+    // Authenticate first
+    const authResponse = await authenticateCJ();
+    const accessToken = authResponse.data.accessToken;
+
+    // Fetch products using GET method with query parameters
+    const url = new URL("https://developers.cjdropshipping.com/api2.0/v1/product/list");
+    url.searchParams.append("pageNum", "1");
+    url.searchParams.append("pageSize", "10");
+    url.searchParams.append("productNameEn", "phone");  // Search for phones
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        "CJ-Access-Token": accessToken,
       },
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const result = await response.json();
 
     console.log("CJ API Response:", JSON.stringify(result, null, 2));
 

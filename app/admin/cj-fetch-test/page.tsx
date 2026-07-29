@@ -220,7 +220,7 @@ export default function CJFetchTestPage() {
                               margin: "0 0 0.5rem",
                             }}
                           >
-                            {product.productNameEn || "Unnamed Product"}
+                            {product.productNameEn || product.productName || "Unnamed Product"}
                           </h5>
                           <div
                             style={{
@@ -233,7 +233,7 @@ export default function CJFetchTestPage() {
                           >
                             <div>
                               <strong>Price:</strong> $
-                              {product.sellPrice?.toFixed(2) || "0.00"}
+                              {product.sellPrice || "0.00"}
                             </div>
                             <div>
                               <strong>SKU:</strong>{" "}
