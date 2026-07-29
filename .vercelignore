@@ -1,0 +1,15 @@
+# Documentation files (not needed in production)
+*.md
+!README.md
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# Local env (production uses Vercel env vars)
+.env.local
+.env*.local
