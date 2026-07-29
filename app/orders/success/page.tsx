@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -20,7 +20,7 @@ interface Order {
   };
 }
 
-export default function OrderSuccessPage() {
+function OrderSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get('order');
@@ -308,5 +308,34 @@ export default function OrderSuccessPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function OrderSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: "100vh", paddingTop: "60px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{
+            width: "60px",
+            height: "60px",
+            border: "4px solid #e5e7eb",
+            borderTop: "4px solid #16a34a",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+            margin: "0 auto 1rem"
+          }} />
+          <p style={{ color: "#6b7280" }}>Loading...</p>
+        </div>
+        <style dangerouslySetInnerHTML={{__html: `
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}} />
+      </div>
+    }>
+      <OrderSuccessContent />
+    </Suspense>
   );
 }
