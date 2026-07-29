@@ -6,10 +6,14 @@ export interface CJAuthResponse {
   result: boolean;
   message: string;
   data: {
+    openId: number;
     accessToken: string;
-    refreshToken?: string;
-    expiresIn?: number;
+    accessTokenExpiryDate: string;
+    refreshToken: string;
+    refreshTokenExpiryDate: string;
+    createDate: string;
   };
+  requestId: string;
 }
 
 export interface CJApiResponse<T = any> {
@@ -45,63 +49,34 @@ export interface CJProductListResponse {
 const CJ_API_BASE_URL = "https://developers.cjdropshipping.com/api2.0/v1";
 
 /**
- * Get CJ API credentials from environment variable
+ * Get CJ API Key from environment variable
  * Server-side only
- * 
- * Supports multiple formats:
- * - Email:password: email@example.com:password_or_token
- * - CJ API format: CJ{userId}@api@{token}
- * - Email only: your-email@example.com
  */
-function getCJCredentials(): { email: string; password?: string } {
+function getCJApiKey(): string {
   const apiKey = process.env.CJ_API_KEY;
   
   if (!apiKey) {
     throw new Error("CJ_API_KEY not found in environment variables");
   }
   
-  const trimmed = apiKey.trim();
-  
-  // Check if it's CJ API format: CJ{userId}@api@{token}
-  if (trimmed.includes('@api@')) {
-    const parts = trimmed.split('@api@');
-    const userId = parts[0]; // e.g., "CJ5366105"
-    const token = parts[1];  // e.g., "465930408b5e4ce6a5802e538fbf01a7"
-    
-    // Use userId as email and token as password
-    return { 
-      email: userId, 
-      password: token 
-    };
-  }
-  
-  // If it contains a colon after an email format, split into email and password
-  // email@example.com:password
-  const colonIndex = trimmed.lastIndexOf(':');
-  if (colonIndex > 0 && trimmed.includes('@') && colonIndex > trimmed.indexOf('@')) {
-    const email = trimmed.substring(0, colonIndex);
-    const password = trimmed.substring(colonIndex + 1);
-    return { email: email.trim(), password: password.trim() };
-  }
-  
-  // Otherwise, just email (for email-only authentication)
-  return { email: trimmed };
+  return apiKey.trim();
 }
 
 /**
  * Authenticate with CJDropShipping API
  * Returns access token for subsequent API calls
  * 
- * CJ API expects ONLY email for authentication
+ * Uses API Key authentication (not email-based)
+ * API Key must be obtained from CJ dashboard: Apps > API > Add API
  */
 export async function authenticateCJ(): Promise<CJAuthResponse> {
   try {
-    const { email } = getCJCredentials();
+    const apiKey = getCJApiKey();
     
-    console.log('Authenticating with CJ API using email:', email);
+    console.log('Authenticating with CJ API using API Key:', maskToken(apiKey));
     
-    // CJ API expects ONLY email in the request body
-    const requestBody = { email };
+    // CJ API expects apiKey parameter
+    const requestBody = { apiKey };
     
     const response = await fetch(`${CJ_API_BASE_URL}/authentication/getAccessToken`, {
       method: "POST",
