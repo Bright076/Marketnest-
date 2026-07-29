@@ -4,9 +4,6 @@
 import { NextResponse } from "next/server";
 import { testCJConnection, maskToken } from "@/lib/cjService";
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
-
 async function handleTestConnection() {
   try {
     const startTime = Date.now();
