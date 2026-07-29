@@ -61,32 +61,24 @@ function getCJApiKey(): string {
 /**
  * Authenticate with CJDropShipping API
  * Returns access token for subsequent API calls
+ * 
+ * NOTE: CJ API key format is: CJ{userId}@api@{hash}
+ * This should be used directly as the access token in headers
  */
 export async function authenticateCJ(): Promise<CJAuthResponse> {
   try {
     const apiKey = getCJApiKey();
     
-    const response = await fetch(`${CJ_API_BASE_URL}/authentication/getAccessToken`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: apiKey,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const data: CJAuthResponse = await response.json();
-    
-    if (!data.result) {
-      throw new Error(data.message || "Authentication failed");
-    }
-
-    return data;
+    // CJ API uses the key directly as the access token
+    // No authentication endpoint needed - just return the key as the token
+    return {
+      code: 200,
+      result: true,
+      message: "Using direct API key",
+      data: {
+        accessToken: apiKey,
+      }
+    };
   } catch (error: any) {
     console.error("CJ Authentication Error:", error);
     throw error;
