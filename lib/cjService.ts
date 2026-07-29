@@ -45,40 +45,86 @@ export interface CJProductListResponse {
 const CJ_API_BASE_URL = "https://developers.cjdropshipping.com/api2.0/v1";
 
 /**
- * Get CJ API Key from environment variable
+ * Get CJ API credentials from environment variable
  * Server-side only
+ * 
+ * Supports multiple formats:
+ * - CJ API format: CJ{userId}@api@{token}
+ * - Email only: your-email@example.com
+ * - Email:password: email:password
  */
-function getCJApiKey(): string {
+function getCJCredentials(): { email: string; password?: string } {
   const apiKey = process.env.CJ_API_KEY;
   
   if (!apiKey) {
     throw new Error("CJ_API_KEY not found in environment variables");
   }
   
-  return apiKey.trim();
+  const trimmed = apiKey.trim();
+  
+  // Check if it's CJ API format: CJ{userId}@api@{token}
+  if (trimmed.includes('@api@')) {
+    const parts = trimmed.split('@api@');
+    const userId = parts[0]; // e.g., "CJ5366105"
+    const token = parts[1];  // e.g., "465930408b5e4ce6a5802e538fbf01a7"
+    
+    // Use userId as email and token as password
+    return { 
+      email: userId, 
+      password: token 
+    };
+  }
+  
+  // If it contains a colon, split into email and password
+  if (trimmed.includes(':')) {
+    const [email, password] = trimmed.split(':');
+    return { email: email.trim(), password: password.trim() };
+  }
+  
+  // Otherwise, just email (for email-only authentication)
+  return { email: trimmed };
 }
 
 /**
  * Authenticate with CJDropShipping API
  * Returns access token for subsequent API calls
  * 
- * CJ API Key format: CJ{userId}@api@{hash}
- * Need to use the entire key as the CJ-Access-Token header
+ * Supports email-only or email:password authentication
  */
 export async function authenticateCJ(): Promise<CJAuthResponse> {
   try {
-    const apiKey = getCJApiKey();
+    const { email, password } = getCJCredentials();
     
-    // For CJ API, we use the API key directly in the header
-    // Return it wrapped in the expected format
-    return {
-      code: 200,
-      result: true,
-      message: "API key ready",
-      data: {
-        accessToken: apiKey,
-      }
-    };
+    console.log('Authenticating with CJ API using email:', email);
+    console.log('Using password:', password ? 'Yes' : 'No (email-only)');
+    
+    const requestBody: any = { email };
+    if (password) {
+      requestBody.password = password;
+    }
+    
+    const response = await fetch(`${CJ_API_BASE_URL}/authentication/getAccessToken`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`CJ Auth Error ${response.status}:`, errorText);
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const data: CJAuthResponse = await response.json();
+    
+    if (!data.result) {
+      throw new Error(data.message || "Authentication failed");
+    }
+
+    console.log('CJ Authentication successful');
+    return data;
   } catch (error: any) {
     console.error("CJ Authentication Error:", error);
     throw error;
