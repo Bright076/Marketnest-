@@ -1,10 +1,10 @@
-// API Route: Test CJDropShipping Connection
+// API Route: Test CJDropshipping Connection
 // Server-side only - handles secure authentication
 
 import { NextResponse } from "next/server";
 import { testCJConnection, maskToken } from "@/lib/cjService";
 
-export async function POST() {
+async function handleTestConnection() {
   try {
     const startTime = Date.now();
 
@@ -40,4 +40,13 @@ export async function POST() {
       { status: 500 }
     );
   }
+}
+
+// Support both GET and POST methods
+export async function GET() {
+  return handleTestConnection();
+}
+
+export async function POST() {
+  return handleTestConnection();
 }
