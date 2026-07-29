@@ -1,22 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ButtonSpinner } from "@/app/components/LoadingSpinner";
-import Image from "next/image";
 
 interface CJProduct {
   pid: string;
+  productName: string;
   productNameEn: string;
-  productImage: string;
-  sellPrice: number;
-  productWeight: number;
   productSku: string;
+  productImage: string;
+  sellPrice: string | number;
+  stock: number;
   categoryName: string;
   description?: string;
 }
 
 interface ImportFormData {
-  cj_pid: string;
+  pid: string;
   title: string;
   description: string;
   image_url: string;
@@ -25,20 +25,25 @@ interface ImportFormData {
   selling_price: number;
   category: string;
   stock: number;
+  product_sku: string;
 }
 
-export default function CJProductsPage() {
+export default function CJProductImportPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [products, setProducts] = useState<CJProduct[]>([]);
+  const [importedPids, setImportedPids] = useState<Set<string>>(new Set());
   const [selectedProduct, setSelectedProduct] = useState<CJProduct | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const pageSize = 20;
 
   const [importForm, setImportForm] = useState<ImportFormData>({
-    cj_pid: "",
+    pid: "",
     title: "",
     description: "",
     image_url: "",
@@ -46,39 +51,40 @@ export default function CJProductsPage() {
     profit_amount: 0,
     selling_price: 0,
     category: "Electronics",
-    stock: 0,
+    stock: 100,
+    product_sku: "",
   });
 
-  const handleSearch = async () => {
-    if (!searchTerm.trim()) {
-      setError("Please enter a search term");
-      return;
-    }
+  // Load initial products
+  useEffect(() => {
+    handleSearch(1);
+  }, []);
 
+  const handleSearch = async (page: number = 1) => {
     setLoading(true);
     setError("");
-    setProducts([]);
+    if (page === 1) {
+      setProducts([]);
+    }
 
     try {
-      const response = await fetch("/api/cj/products/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productName: searchTerm,
-          pageNum: 1,
-          pageSize: 20,
-        }),
-      });
+      const url = new URL("/api/cj/products/search-import", window.location.origin);
+      url.searchParams.append("keyword", searchTerm);
+      url.searchParams.append("pageNum", page.toString());
+      url.searchParams.append("pageSize", pageSize.toString());
 
+      const response = await fetch(url.toString());
       const result = await response.json();
 
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to search products");
       }
 
-      setProducts(result.data.list || []);
+      setProducts(result.data.products || []);
+      setTotalProducts(result.data.total || 0);
+      setCurrentPage(page);
       
-      if (result.data.list.length === 0) {
+      if (result.data.products.length === 0 && page === 1) {
         setError("No products found. Try a different search term.");
       }
     } catch (error: any) {
@@ -88,19 +94,26 @@ export default function CJProductsPage() {
     }
   };
 
-  const handleAddToStore = (product: CJProduct) => {
+  const handleImportClick = (product: CJProduct) => {
     setSelectedProduct(product);
+    
+    const supplierPrice = typeof product.sellPrice === 'string' 
+      ? parseFloat(product.sellPrice) 
+      : product.sellPrice;
+
     setImportForm({
-      cj_pid: product.pid,
-      title: product.productNameEn,
+      pid: product.pid,
+      title: product.productNameEn || product.productName || "",
       description: product.description || "",
-      image_url: product.productImage,
-      supplier_price: product.sellPrice,
+      image_url: product.productImage || "",
+      supplier_price: supplierPrice,
       profit_amount: 0,
-      selling_price: product.sellPrice,
+      selling_price: supplierPrice,
       category: product.categoryName || "Electronics",
-      stock: 100, // Default stock
+      stock: product.stock || 100,
+      product_sku: product.productSku || "",
     });
+    
     setShowImportModal(true);
     setError("");
     setSuccessMessage("");
@@ -134,6 +147,8 @@ export default function CJProductsPage() {
       }
 
       setSuccessMessage("Product imported successfully!");
+      setImportedPids(prev => new Set([...prev, importForm.pid]));
+      
       setTimeout(() => {
         setShowImportModal(false);
         setSuccessMessage("");
@@ -145,15 +160,17 @@ export default function CJProductsPage() {
     }
   };
 
+  const totalPages = Math.ceil(totalProducts / pageSize);
+
   return (
     <div>
       {/* Header */}
       <div style={{ marginBottom: "2rem" }}>
         <h1 style={{ fontSize: "2rem", fontWeight: 800, color: "#111827", marginBottom: "0.5rem" }}>
-          🌍 CJ Products
+          🌍 CJ Product Import
         </h1>
         <p style={{ color: "#6b7280" }}>
-          Search and import products from CJDropShipping
+          Search and import products from CJDropShipping into your store
         </p>
       </div>
 
@@ -168,8 +185,8 @@ export default function CJProductsPage() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-              placeholder="e.g., iPhone, laptop, headphones..."
+              onKeyPress={(e) => e.key === "Enter" && handleSearch(1)}
+              placeholder="e.g., iPhone, laptop, headphones, smartwatch..."
               style={{
                 width: "100%",
                 padding: "0.75rem 1rem",
@@ -181,7 +198,7 @@ export default function CJProductsPage() {
             />
           </div>
           <button
-            onClick={handleSearch}
+            onClick={() => handleSearch(1)}
             disabled={loading}
             style={{
               padding: "0.75rem 2rem",
@@ -201,6 +218,12 @@ export default function CJProductsPage() {
             {loading ? "Searching..." : "🔍 Search"}
           </button>
         </div>
+
+        {totalProducts > 0 && (
+          <div style={{ marginTop: "1rem", color: "#6b7280", fontSize: "0.9rem" }}>
+            Found {totalProducts} products
+          </div>
+        )}
       </div>
 
       {/* Error Message */}
@@ -210,62 +233,136 @@ export default function CJProductsPage() {
         </div>
       )}
 
+      {/* Success Message */}
+      {successMessage && (
+        <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#166534", padding: "1rem", borderRadius: "12px", marginBottom: "2rem" }}>
+          ✅ {successMessage}
+        </div>
+      )}
+
       {/* Products Grid */}
       {products.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1.5rem" }}>
-          {products.map((product) => (
-            <div
-              key={product.pid}
-              style={{
-                background: "#ffffff",
-                borderRadius: "16px",
-                border: "1px solid #e5e7eb",
-                overflow: "hidden",
-                transition: "all 0.3s",
-              }}
-            >
-              <div style={{ background: "#f9fafb", padding: "1rem", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "200px" }}>
-                <img
-                  src={product.productImage || "/placeholder.png"}
-                  alt={product.productNameEn}
-                  style={{ maxWidth: "100%", maxHeight: "180px", objectFit: "contain" }}
-                />
-              </div>
-              <div style={{ padding: "1.5rem" }}>
-                <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827", marginBottom: "0.5rem", minHeight: "3rem" }}>
-                  {product.productNameEn}
-                </h3>
-                <div style={{ marginBottom: "1rem" }}>
-                  <div style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "0.25rem" }}>
-                    Supplier Price
-                  </div>
-                  <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#16a34a" }}>
-                    ${product.sellPrice.toFixed(2)}
-                  </div>
-                </div>
-                <div style={{ fontSize: "0.75rem", color: "#6b7280", marginBottom: "1rem" }}>
-                  SKU: {product.productSku}
-                </div>
-                <button
-                  onClick={() => handleAddToStore(product)}
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
+            {products.map((product) => {
+              const isImported = importedPids.has(product.pid);
+              
+              return (
+                <div
+                  key={product.pid}
                   style={{
-                    width: "100%",
-                    padding: "0.75rem",
-                    background: "linear-gradient(135deg, #16a34a 0%, #059669 100%)",
-                    color: "#ffffff",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontSize: "0.95rem",
-                    fontWeight: 600,
-                    cursor: "pointer",
+                    background: "#ffffff",
+                    borderRadius: "16px",
+                    border: "1px solid #e5e7eb",
+                    overflow: "hidden",
+                    transition: "all 0.3s",
+                    opacity: isImported ? 0.6 : 1,
                   }}
                 >
-                  ➕ Add to My Store
-                </button>
-              </div>
+                  <div style={{ background: "#f9fafb", padding: "1rem", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "200px" }}>
+                    <img
+                      src={product.productImage || "/placeholder.png"}
+                      alt={product.productNameEn || product.productName}
+                      style={{ maxWidth: "100%", maxHeight: "180px", objectFit: "contain" }}
+                    />
+                  </div>
+                  <div style={{ padding: "1.5rem" }}>
+                    <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827", marginBottom: "0.5rem", minHeight: "3rem", lineHeight: 1.4 }}>
+                      {product.productNameEn || product.productName || "Unnamed Product"}
+                    </h3>
+                    <div style={{ marginBottom: "1rem" }}>
+                      <div style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "0.25rem" }}>
+                        Supplier Price
+                      </div>
+                      <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#16a34a" }}>
+                        ${typeof product.sellPrice === 'string' ? product.sellPrice : product.sellPrice.toFixed(2)}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: "0.75rem", color: "#6b7280", marginBottom: "0.5rem" }}>
+                      <div><strong>Category:</strong> {product.categoryName || "N/A"}</div>
+                      <div><strong>Stock:</strong> {product.stock || "N/A"}</div>
+                      <div><strong>SKU:</strong> {product.productSku || "N/A"}</div>
+                    </div>
+                    
+                    {isImported ? (
+                      <div style={{
+                        width: "100%",
+                        padding: "0.75rem",
+                        background: "#f0fdf4",
+                        color: "#166534",
+                        border: "1px solid #bbf7d0",
+                        borderRadius: "8px",
+                        fontSize: "0.95rem",
+                        fontWeight: 600,
+                        textAlign: "center",
+                      }}>
+                        ✅ Imported
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleImportClick(product)}
+                        style={{
+                          width: "100%",
+                          padding: "0.75rem",
+                          background: "linear-gradient(135deg, #16a34a 0%, #059669 100%)",
+                          color: "#ffffff",
+                          border: "none",
+                          borderRadius: "8px",
+                          fontSize: "0.95rem",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        ➕ Import to Store
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div style={{ display: "flex", justifyContent: "center", gap: "0.5rem", alignItems: "center" }}>
+              <button
+                onClick={() => handleSearch(currentPage - 1)}
+                disabled={currentPage === 1 || loading}
+                style={{
+                  padding: "0.5rem 1rem",
+                  background: currentPage === 1 ? "#f3f4f6" : "#ffffff",
+                  color: currentPage === 1 ? "#9ca3af" : "#374151",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "8px",
+                  cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                ← Previous
+              </button>
+              
+              <span style={{ color: "#6b7280", fontSize: "0.9rem" }}>
+                Page {currentPage} of {totalPages}
+              </span>
+              
+              <button
+                onClick={() => handleSearch(currentPage + 1)}
+                disabled={currentPage === totalPages || loading}
+                style={{
+                  padding: "0.5rem 1rem",
+                  background: currentPage === totalPages ? "#f3f4f6" : "#ffffff",
+                  color: currentPage === totalPages ? "#9ca3af" : "#374151",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "8px",
+                  cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                Next →
+              </button>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
 
       {/* Import Modal */}
@@ -295,12 +392,6 @@ export default function CJProductsPage() {
             <h2 style={{ fontSize: "1.5rem", fontWeight: 800, color: "#111827", marginBottom: "1.5rem" }}>
               Import Product to Store
             </h2>
-
-            {successMessage && (
-              <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#166534", padding: "1rem", borderRadius: "8px", marginBottom: "1rem" }}>
-                ✅ {successMessage}
-              </div>
-            )}
 
             {error && (
               <div style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", padding: "1rem", borderRadius: "8px", marginBottom: "1rem" }}>
@@ -348,7 +439,7 @@ export default function CJProductsPage() {
 
                 <div>
                   <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, color: "#166534", marginBottom: "0.5rem" }}>
-                    Profit Amount ($) - Editable
+                    Profit Amount ($) - Set Your Profit
                   </label>
                   <input
                     type="number"
@@ -385,7 +476,7 @@ export default function CJProductsPage() {
                     }}
                   />
                   <p style={{ fontSize: "0.75rem", color: "#166534", marginTop: "0.5rem" }}>
-                    = Supplier Price (${importForm.supplier_price}) + Profit (${importForm.profit_amount})
+                    = Supplier Price (${importForm.supplier_price.toFixed(2)}) + Profit (${importForm.profit_amount.toFixed(2)})
                   </p>
                 </div>
               </div>

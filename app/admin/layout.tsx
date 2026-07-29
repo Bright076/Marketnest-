@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { checkAdminAccess } from "@/lib/adminAuth";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
@@ -12,6 +12,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -34,6 +35,49 @@ export default function AdminLayout({
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/");
+  };
+
+  const isActive = (path: string) => {
+    if (path === "/admin") {
+      return pathname === "/admin";
+    }
+    return pathname?.startsWith(path);
+  };
+
+  const NavLink = ({ href, emoji, label }: { href: string; emoji: string; label: string }) => {
+    const active = isActive(href);
+    
+    return (
+      <Link 
+        href={href} 
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.75rem",
+          padding: "0.75rem 1rem",
+          borderRadius: "8px",
+          textDecoration: "none",
+          color: active ? "#16a34a" : "#374151",
+          fontWeight: 600,
+          marginBottom: "0.5rem",
+          background: active ? "#f0fdf4" : "transparent",
+          border: active ? "1px solid #bbf7d0" : "1px solid transparent",
+          transition: "all 0.2s"
+        }}
+        onMouseEnter={(e) => {
+          if (!active) {
+            e.currentTarget.style.background = "#f9fafb";
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!active) {
+            e.currentTarget.style.background = "transparent";
+          }
+        }}
+      >
+        <span>{emoji}</span> {label}
+      </Link>
+    );
   };
 
   if (loading) {
@@ -102,143 +146,12 @@ export default function AdminLayout({
 
         {/* Navigation */}
         <nav style={{ padding: "0 1rem" }}>
-          <Link href="/admin" style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.75rem",
-            padding: "0.75rem 1rem",
-            borderRadius: "8px",
-            textDecoration: "none",
-            color: "#374151",
-            fontWeight: 600,
-            marginBottom: "0.5rem",
-            transition: "all 0.2s"
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "#f0fdf4";
-            e.currentTarget.style.color = "#16a34a";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.color = "#374151";
-          }}>
-            <span>📊</span> Dashboard
-          </Link>
-
-          <Link href="/admin/cj-products" style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.75rem",
-            padding: "0.75rem 1rem",
-            borderRadius: "8px",
-            textDecoration: "none",
-            color: "#374151",
-            fontWeight: 600,
-            marginBottom: "0.5rem",
-            transition: "all 0.2s"
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "#f0fdf4";
-            e.currentTarget.style.color = "#16a34a";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.color = "#374151";
-          }}>
-            <span>🌍</span> CJ Products
-          </Link>
-
-          <Link href="/admin/products" style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.75rem",
-            padding: "0.75rem 1rem",
-            borderRadius: "8px",
-            textDecoration: "none",
-            color: "#374151",
-            fontWeight: 600,
-            marginBottom: "0.5rem",
-            transition: "all 0.2s"
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "#f0fdf4";
-            e.currentTarget.style.color = "#16a34a";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.color = "#374151";
-          }}>
-            <span>📦</span> My Products
-          </Link>
-
-          <Link href="/admin/orders" style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.75rem",
-            padding: "0.75rem 1rem",
-            borderRadius: "8px",
-            textDecoration: "none",
-            color: "#374151",
-            fontWeight: 600,
-            marginBottom: "0.5rem",
-            transition: "all 0.2s"
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "#f0fdf4";
-            e.currentTarget.style.color = "#16a34a";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.color = "#374151";
-          }}>
-            <span>🛒</span> Orders
-          </Link>
-
-          <Link href="/admin/cj-test" style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.75rem",
-            padding: "0.75rem 1rem",
-            borderRadius: "8px",
-            textDecoration: "none",
-            color: "#374151",
-            fontWeight: 600,
-            marginBottom: "0.5rem",
-            transition: "all 0.2s"
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "#f0fdf4";
-            e.currentTarget.style.color = "#16a34a";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.color = "#374151";
-          }}>
-            <span>🔌</span> CJ API Test
-          </Link>
-
-          <Link href="/" style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.75rem",
-            padding: "0.75rem 1rem",
-            borderRadius: "8px",
-            textDecoration: "none",
-            color: "#374151",
-            fontWeight: 600,
-            marginBottom: "0.5rem",
-            transition: "all 0.2s"
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "#f0fdf4";
-            e.currentTarget.style.color = "#16a34a";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.color = "#374151";
-          }}>
-            <span>🏠</span> View Store
-          </Link>
+          <NavLink href="/admin" emoji="📊" label="Dashboard" />
+          <NavLink href="/admin/cj-products" emoji="🌍" label="CJ Product Import" />
+          <NavLink href="/admin/products" emoji="📦" label="My Products" />
+          <NavLink href="/admin/orders" emoji="🛒" label="Orders" />
+          <NavLink href="/admin/cj-test" emoji="🔌" label="CJ API Test" />
+          <NavLink href="/" emoji="🏠" label="View Store" />
         </nav>
 
         {/* Logout Button */}

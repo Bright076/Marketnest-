@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      cj_pid,
+      pid,
       title,
       description,
       image_url,
@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
       selling_price,
       category,
       stock,
+      product_sku,
     } = body;
 
     // Validation
@@ -34,23 +35,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if product already exists (by CJ PID)
-    const { data: existingProduct } = await supabase
-      .from("products")
-      .select("id")
-      .eq("cj_pid", cj_pid)
-      .single();
+    if (pid) {
+      const { data: existingProduct } = await supabase
+        .from("products")
+        .select("id")
+        .eq("cj_pid", pid)
+        .maybeSingle();
 
-    if (existingProduct) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            message: "Product already imported",
-            details: "This product is already in your store",
+      if (existingProduct) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              message: "Product already imported",
+              details: "This product is already in your store",
+            },
           },
-        },
-        { status: 409 }
-      );
+          { status: 409 }
+        );
+      }
     }
 
     // Insert product
@@ -58,7 +61,7 @@ export async function POST(request: NextRequest) {
       .from("products")
       .insert([
         {
-          cj_pid,
+          cj_pid: pid || null,
           title,
           description: description || "",
           image_url: image_url || "",
@@ -66,7 +69,7 @@ export async function POST(request: NextRequest) {
           profit_amount: parseFloat(profit_amount) || 0,
           selling_price: parseFloat(selling_price),
           category: category || "Electronics",
-          stock: parseInt(stock) || 0,
+          stock: parseInt(stock) || 100,
           product_type: "cj",
         },
       ])
