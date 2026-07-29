@@ -49,9 +49,9 @@ const CJ_API_BASE_URL = "https://developers.cjdropshipping.com/api2.0/v1";
  * Server-side only
  * 
  * Supports multiple formats:
+ * - Email:password: email@example.com:password_or_token
  * - CJ API format: CJ{userId}@api@{token}
  * - Email only: your-email@example.com
- * - Email:password: email:password
  */
 function getCJCredentials(): { email: string; password?: string } {
   const apiKey = process.env.CJ_API_KEY;
@@ -75,9 +75,12 @@ function getCJCredentials(): { email: string; password?: string } {
     };
   }
   
-  // If it contains a colon, split into email and password
-  if (trimmed.includes(':')) {
-    const [email, password] = trimmed.split(':');
+  // If it contains a colon after an email format, split into email and password
+  // email@example.com:password
+  const colonIndex = trimmed.lastIndexOf(':');
+  if (colonIndex > 0 && trimmed.includes('@') && colonIndex > trimmed.indexOf('@')) {
+    const email = trimmed.substring(0, colonIndex);
+    const password = trimmed.substring(colonIndex + 1);
     return { email: email.trim(), password: password.trim() };
   }
   
@@ -89,19 +92,16 @@ function getCJCredentials(): { email: string; password?: string } {
  * Authenticate with CJDropShipping API
  * Returns access token for subsequent API calls
  * 
- * Supports email-only or email:password authentication
+ * CJ API expects ONLY email for authentication
  */
 export async function authenticateCJ(): Promise<CJAuthResponse> {
   try {
-    const { email, password } = getCJCredentials();
+    const { email } = getCJCredentials();
     
     console.log('Authenticating with CJ API using email:', email);
-    console.log('Using password:', password ? 'Yes' : 'No (email-only)');
     
-    const requestBody: any = { email };
-    if (password) {
-      requestBody.password = password;
-    }
+    // CJ API expects ONLY email in the request body
+    const requestBody = { email };
     
     const response = await fetch(`${CJ_API_BASE_URL}/authentication/getAccessToken`, {
       method: "POST",
