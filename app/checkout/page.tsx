@@ -15,8 +15,12 @@ export default function CheckoutPage() {
     customer_name: "",
     customer_email: "",
     customer_phone: "",
+    customer_country: "United States",
+    customer_state: "",
+    customer_city: "",
     customer_address: "",
-    customer_country: "United States"
+    customer_postal_code: "",
+    order_notes: ""
   });
   const [paymentMethod, setPaymentMethod] = useState<"card" | "crypto">("card");
   const currency = "USD"; // Always USD
@@ -57,8 +61,12 @@ export default function CheckoutPage() {
           customer_name: profile.full_name || "",
           customer_email: user.email || "",
           customer_phone: profile.phone || "",
+          customer_country: "United States",
+          customer_state: "",
+          customer_city: "",
           customer_address: "",
-          customer_country: "United States"
+          customer_postal_code: "",
+          order_notes: ""
         });
       }
     } catch (error) {
@@ -102,9 +110,16 @@ export default function CheckoutPage() {
             {
               user_id: user.id,
               product_id: productId,
+              quantity: quantity,
               customer_name: formData.customer_name,
+              customer_email: formData.customer_email,
               customer_phone: formData.customer_phone,
+              customer_country: formData.customer_country,
+              customer_state: formData.customer_state,
+              customer_city: formData.customer_city,
               customer_address: formData.customer_address,
+              customer_postal_code: formData.customer_postal_code || null,
+              order_notes: formData.order_notes || null,
               amount_paid: itemTotal,
               currency: "USD",
               payment_method: paymentMethod,
@@ -135,7 +150,37 @@ export default function CheckoutPage() {
         return order;
       });
 
-      await Promise.all(orderPromises);
+      const orders = await Promise.all(orderPromises);
+
+      // Send admin notification email for all orders
+      try {
+        await fetch('/api/admin/order-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orders: orders,
+            customerInfo: {
+              name: formData.customer_name,
+              email: formData.customer_email,
+              phone: formData.customer_phone
+            },
+            deliveryInfo: {
+              country: formData.customer_country,
+              state: formData.customer_state,
+              city: formData.customer_city,
+              address: formData.customer_address,
+              postalCode: formData.customer_postal_code,
+              notes: formData.order_notes
+            },
+            paymentMethod: paymentMethod,
+            totalAmount: totalAmount,
+            currency: "USD"
+          })
+        });
+      } catch (emailError) {
+        console.error('Failed to send admin notification:', emailError);
+        // Don't fail the order if email fails
+      }
 
       // Clear cart
       clearCart();
@@ -344,7 +389,119 @@ export default function CheckoutPage() {
                 </select>
               </div>
 
+              {/* State/Province */}
+              <div style={{ marginBottom: "1.5rem" }}>
+                <label style={{
+                  display: "block",
+                  fontSize: "0.9rem",
+                  fontWeight: 600,
+                  color: "#374151",
+                  marginBottom: "0.5rem"
+                }}>
+                  State/Province *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.customer_state}
+                  onChange={(e) => setFormData({ ...formData, customer_state: e.target.value })}
+                  placeholder="e.g., California, Lagos, Ontario"
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem 1rem",
+                    border: "2px solid #e5e7eb",
+                    borderRadius: "8px",
+                    fontSize: "1rem",
+                    outline: "none"
+                  }}
+                />
+              </div>
+
+              {/* City */}
+              <div style={{ marginBottom: "1.5rem" }}>
+                <label style={{
+                  display: "block",
+                  fontSize: "0.9rem",
+                  fontWeight: 600,
+                  color: "#374151",
+                  marginBottom: "0.5rem"
+                }}>
+                  City *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.customer_city}
+                  onChange={(e) => setFormData({ ...formData, customer_city: e.target.value })}
+                  placeholder="e.g., Los Angeles, Ikeja, Toronto"
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem 1rem",
+                    border: "2px solid #e5e7eb",
+                    borderRadius: "8px",
+                    fontSize: "1rem",
+                    outline: "none"
+                  }}
+                />
+              </div>
+
               {/* Address */}
+              <div style={{ marginBottom: "1.5rem" }}>
+                <label style={{
+                  display: "block",
+                  fontSize: "0.9rem",
+                  fontWeight: 600,
+                  color: "#374151",
+                  marginBottom: "0.5rem"
+                }}>
+                  Full Delivery Address *
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={formData.customer_address}
+                  onChange={(e) => setFormData({ ...formData, customer_address: e.target.value })}
+                  placeholder="Enter your complete street address including building/apartment number"
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem 1rem",
+                    border: "2px solid #e5e7eb",
+                    borderRadius: "8px",
+                    fontSize: "1rem",
+                    outline: "none",
+                    resize: "vertical"
+                  }}
+                />
+              </div>
+
+              {/* Postal Code */}
+              <div style={{ marginBottom: "1.5rem" }}>
+                <label style={{
+                  display: "block",
+                  fontSize: "0.9rem",
+                  fontWeight: 600,
+                  color: "#374151",
+                  marginBottom: "0.5rem"
+                }}>
+                  Postal/ZIP Code
+                </label>
+                <input
+                  type="text"
+                  value={formData.customer_postal_code}
+                  onChange={(e) => setFormData({ ...formData, customer_postal_code: e.target.value })}
+                  placeholder="Optional"
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem 1rem",
+                    border: "2px solid #e5e7eb",
+                    borderRadius: "8px",
+                    fontSize: "1rem",
+                    outline: "none"
+                  }}
+                />
+              </div>
+
+              {/* Order Notes */}
               <div style={{ marginBottom: "2rem" }}>
                 <label style={{
                   display: "block",
@@ -353,14 +510,13 @@ export default function CheckoutPage() {
                   color: "#374151",
                   marginBottom: "0.5rem"
                 }}>
-                  Delivery Address *
+                  Order Notes (Optional)
                 </label>
                 <textarea
-                  required
-                  rows={4}
-                  value={formData.customer_address}
-                  onChange={(e) => setFormData({ ...formData, customer_address: e.target.value })}
-                  placeholder="Enter your full delivery address"
+                  rows={3}
+                  value={formData.order_notes}
+                  onChange={(e) => setFormData({ ...formData, order_notes: e.target.value })}
+                  placeholder="Any special delivery instructions or notes..."
                   style={{
                     width: "100%",
                     padding: "0.75rem 1rem",

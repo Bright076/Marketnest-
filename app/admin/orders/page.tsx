@@ -7,7 +7,10 @@ import Link from "next/link";
 interface Order {
   id: string;
   customer_name: string;
+  customer_email: string;
   customer_phone: string;
+  customer_country: string;
+  customer_city: string;
   customer_address: string;
   amount_paid: number;
   payment_status: string;
