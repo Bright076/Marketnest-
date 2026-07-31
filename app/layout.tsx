@@ -15,6 +15,11 @@ export const metadata: Metadata = {
   title: "MarketNest – Quality Products at Amazing Prices",
   description:
     "Discover quality products at unbeatable prices. Shop from our curated collection or grab exclusive partner deals with fast delivery.",
+  icons: {
+    icon: "/1000282492.png",
+    shortcut: "/1000282492.png",
+    apple: "/1000282492.png",
+  },
 };
 
 export default function RootLayout({
