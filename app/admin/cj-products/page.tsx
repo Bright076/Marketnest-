@@ -119,20 +119,31 @@ export default function CJProductImportPage() {
       const response = await fetch(url.toString());
       const result = await response.json();
 
-      console.log('Search result:', result); // Debug log
+      console.log('🔍 Search Response:', {
+        success: result.success,
+        keyword: trimmedSearch,
+        productsFound: result.data?.products?.length || 0,
+        totalAvailable: result.data?.total || 0,
+        searchInfo: result.searchInfo,
+      });
 
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to search products");
       }
 
-      setProducts(result.data.products || []);
+      const foundProducts = result.data.products || [];
+      setProducts(foundProducts);
       setTotalProducts(result.data.total || 0);
       setCurrentPage(page);
       
-      if (result.data.products.length === 0 && page === 1) {
-        setError(
-          `No products found for "${trimmedSearch}". Try a different search term or browse the latest products below.`
-        );
+      if (foundProducts.length === 0 && page === 1) {
+        setError(`No products found for "${trimmedSearch}". Try a different term.`);
+      } else if (foundProducts.length > 0) {
+        console.log('✅ First 3 products:', foundProducts.slice(0, 3).map((p: CJProduct) => ({
+          name: p.productNameEn || p.productName,
+          price: p.sellPrice,
+          pid: p.pid,
+        })));
       }
     } catch (error: any) {
       setError(error.message || "Search failed. Please try again.");

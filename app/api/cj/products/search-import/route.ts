@@ -11,6 +11,13 @@ export async function GET(request: NextRequest) {
     const pageNum = searchParams.get("pageNum") || "1";
     const pageSize = searchParams.get("pageSize") || "20";
 
+    console.log('🔍 CJ Search Request:', {
+      keyword: keyword || '(empty - showing all products)',
+      page: pageNum,
+      size: pageSize,
+      timestamp: new Date().toISOString()
+    });
+
     // Authenticate
     const authResponse = await authenticateCJ();
     const accessToken = authResponse.data.accessToken;
@@ -20,18 +27,16 @@ export async function GET(request: NextRequest) {
     url.searchParams.append("pageNum", pageNum);
     url.searchParams.append("pageSize", pageSize);
     
-    // Add keyword to search - CJ searches across multiple fields automatically
-    if (keyword) {
-      // Just use productNameEn - CJ will search in name, SKU, and description
-      url.searchParams.append("productNameEn", keyword);
+    // Add keyword to search if provided
+    // CJ API searches across product name, SKU, and other fields
+    if (keyword.trim()) {
+      url.searchParams.append("productNameEn", keyword.trim());
+      console.log('📝 Search parameter added: productNameEn =', keyword.trim());
+    } else {
+      console.log('📋 No search keyword - fetching all products');
     }
 
-    console.log('CJ API Search Request:', {
-      keyword: keyword,
-      page: pageNum,
-      size: pageSize,
-      url: url.toString()
-    });
+    console.log('🌐 Full CJ API URL:', url.toString());
 
     // Fetch products
     const response = await fetch(url.toString(), {
@@ -43,10 +48,17 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('❌ CJ API HTTP Error:', response.status, errorText);
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
     const result = await response.json();
+    console.log('📦 CJ API Response:', {
+      success: result.result,
+      message: result.message,
+      productCount: result.data?.list?.length || 0,
+      totalAvailable: result.data?.total || 0,
+    });
 
     if (!result.result) {
       throw new Error(result.message || "Failed to search products");
@@ -55,8 +67,10 @@ export async function GET(request: NextRequest) {
     // Get products and sort them by relevance if keyword exists
     let products = result.data?.list || [];
     
-    if (keyword && products.length > 0) {
-      const searchLower = keyword.toLowerCase();
+    if (keyword.trim() && products.length > 0) {
+      const searchLower = keyword.trim().toLowerCase();
+      
+      console.log('🎯 Sorting products by relevance for:', searchLower);
       
       // Sort products by relevance
       products = products.sort((a: any, b: any) => {
@@ -84,9 +98,9 @@ export async function GET(request: NextRequest) {
         if (aIndex !== -1) return -1;
         if (bIndex !== -1) return 1;
         
-        // Priority 4: Word boundary match (e.g., "phone" in "Smart Phone Case")
-        const aWordMatch = aName.match(new RegExp(`\\b${searchLower}`, 'i'));
-        const bWordMatch = bName.match(new RegExp(`\\b${searchLower}`, 'i'));
+        // Priority 4: Word boundary match
+        const aWordMatch = aName.match(new RegExp(`\\b${searchLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i'));
+        const bWordMatch = bName.match(new RegExp(`\\b${searchLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i'));
         if (aWordMatch && !bWordMatch) return -1;
         if (!aWordMatch && bWordMatch) return 1;
         
@@ -94,20 +108,37 @@ export async function GET(request: NextRequest) {
         return 0;
       });
       
-      console.log(`Sorted ${products.length} products by relevance for keyword: "${keyword}"`);
+      console.log(`✅ Sorted ${products.length} products by relevance`);
+      
+      // Log top 3 product names for debugging
+      const topProducts = products.slice(0, 3).map((p: any) => p.productNameEn || p.productName);
+      console.log('🏆 Top 3 results:', topProducts);
     }
 
-    return NextResponse.json({
+    const responseData = {
       success: true,
       data: {
         products: products,
         total: result.data?.total || 0,
-        pageNum: result.data?.pageNum || 1,
-        pageSize: result.data?.pageSize || 20,
+        pageNum: result.data?.pageNum || parseInt(pageNum),
+        pageSize: result.data?.pageSize || parseInt(pageSize),
       },
+      searchInfo: {
+        keyword: keyword,
+        resultsReturned: products.length,
+        totalAvailable: result.data?.total || 0,
+        sortedByRelevance: keyword.trim() !== '',
+      }
+    };
+
+    console.log('✅ Sending response:', {
+      productsReturned: products.length,
+      total: result.data?.total || 0,
     });
+
+    return NextResponse.json(responseData);
   } catch (error: any) {
-    console.error("CJ Product Search Error:", error);
+    console.error("❌ CJ Product Search Error:", error);
 
     return NextResponse.json(
       {
