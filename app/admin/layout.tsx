@@ -150,6 +150,7 @@ export default function AdminLayout({
           <NavLink href="/admin/cj-products" emoji="🌍" label="CJ Product Import" />
           <NavLink href="/admin/products" emoji="📦" label="My Products" />
           <NavLink href="/admin/orders" emoji="🛒" label="Orders" />
+          <NavLink href="/admin/notifications" emoji="🔔" label="Notifications" />
           <NavLink href="/admin/cj-test" emoji="🔌" label="CJ API Test" />
           <NavLink href="/" emoji="🏠" label="View Store" />
         </nav>

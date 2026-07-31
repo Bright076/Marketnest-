@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useCart } from "../context/CartContext";
 import { supabase } from "@/lib/supabaseClient";
 import { checkAdminAccess } from "@/lib/adminAuth";
+import NotificationBell from "./NotificationBell";
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -126,6 +127,9 @@ export default function Navbar() {
 
           {/* Global Action items */}
           <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+            {/* Notification Bell - Only for logged-in users */}
+            {user && !isAdmin && <NotificationBell />}
+            
             {/* Profile Icon - Always show */}
             <Link 
               href={profileLink}
