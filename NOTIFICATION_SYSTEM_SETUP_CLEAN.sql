@@ -1,9 +1,10 @@
 -- ===========================================
--- COMPLETE NOTIFICATION SYSTEM SETUP
+-- COMPLETE NOTIFICATION SYSTEM SETUP (CLEAN)
 -- ===========================================
 -- Run this SQL in your Supabase SQL Editor
+-- This version safely handles existing objects
 
--- Create notifications table
+-- Create notifications table (if not exists)
 CREATE TABLE IF NOT EXISTS notifications (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -21,10 +22,10 @@ CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(is_read);
 CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(type);
 
--- Add RLS (Row Level Security) policies
+-- Enable RLS (Row Level Security)
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
--- Drop existing policies if they exist (prevents errors on re-run)
+-- Drop existing policies if they exist
 DROP POLICY IF EXISTS "Users can view own notifications" ON notifications;
 DROP POLICY IF EXISTS "Users can update own notifications" ON notifications;
 DROP POLICY IF EXISTS "Users can delete own notifications" ON notifications;
@@ -60,7 +61,7 @@ CREATE POLICY "Admins can insert notifications"
     )
   );
 
--- Create function to automatically update updated_at timestamp
+-- Create or replace function to automatically update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -76,7 +77,7 @@ CREATE TRIGGER update_notifications_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Create function to send notification on order status change
+-- Create or replace function to send notification on order status change
 CREATE OR REPLACE FUNCTION notify_order_status_change()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -171,10 +172,16 @@ BEGIN
   END IF;
 END $$;
 
--- Add comment to table
+-- Add comments to table
 COMMENT ON TABLE notifications IS 'Customer notification system with realtime updates';
 COMMENT ON COLUMN notifications.type IS 'Notification types: order_confirmed, payment_received, processing, shipped, out_for_delivery, delivered, cancelled, promotional_offer, general_announcement';
 
 -- ✅ Setup Complete!
 -- Notifications will now be automatically created when order/payment status changes
 -- Realtime updates enabled for instant notifications
+
+-- Verify setup:
+SELECT 'Notifications table created' AS status;
+SELECT 'Policies created: ' || COUNT(*) AS policies FROM pg_policies WHERE tablename = 'notifications';
+SELECT 'Triggers created: ' || COUNT(*) AS triggers FROM pg_trigger WHERE tgname LIKE '%notification%';
+SELECT 'Setup complete!' AS message;
