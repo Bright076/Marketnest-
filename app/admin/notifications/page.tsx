@@ -40,18 +40,20 @@ export default function AdminNotificationsPage() {
       
       console.log('All profiles loaded:', allProfiles);
 
-      // Filter out admins - check for both 'admin' role and null/undefined
+      // Filter: Include users with role='user' OR role=null/undefined
+      // Exclude ONLY users with role='admin'
       const customerProfiles = allProfiles?.filter(profile => {
-        const isAdmin = profile.role === 'admin';
-        console.log(`Profile ${profile.email}: role=${profile.role}, isAdmin=${isAdmin}`);
-        return !isAdmin;
+        const role = profile.role;
+        const isCustomer = role === 'user' || role === null || role === undefined || role === '';
+        console.log(`Profile ${profile.email}: role="${role}", isCustomer=${isCustomer}`);
+        return isCustomer;
       }) || [];
       
-      console.log('Filtered customers:', customerProfiles);
+      console.log('Filtered customers (role=user or null):', customerProfiles);
       setUsers(customerProfiles);
 
       if (customerProfiles.length === 0) {
-        console.warn('No customer profiles found. All users might be admins or profiles table is empty.');
+        console.warn('No customer profiles found. Make sure users have role="user" or role=null in Supabase profiles table.');
       }
     } catch (error) {
       console.error('Error loading users:', error);
@@ -193,8 +195,13 @@ export default function AdminNotificationsPage() {
               borderRadius: "8px",
               border: "1px solid #fde047"
             }}>
-              <p style={{ fontSize: "0.85rem", color: "#92400e", margin: 0 }}>
-                ⚠️ No customers found. Check browser console for details, or verify that users have signed up.
+              <p style={{ fontSize: "0.85rem", color: "#92400e", margin: "0 0 0.5rem 0", fontWeight: 600 }}>
+                ⚠️ No customers found
+              </p>
+              <p style={{ fontSize: "0.8rem", color: "#92400e", margin: 0, lineHeight: 1.6 }}>
+                Customers are users with <strong>role = 'user'</strong> or <strong>role = null</strong> in Supabase profiles table.
+                <br />
+                Check browser console for details about loaded profiles.
               </p>
             </div>
           )}
