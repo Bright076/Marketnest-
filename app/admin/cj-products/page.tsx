@@ -94,7 +94,9 @@ export default function CJProductImportPage() {
   };
 
   const handleSearch = async (page: number = 1) => {
-    if (!searchTerm.trim()) {
+    const trimmedSearch = searchTerm.trim();
+    
+    if (!trimmedSearch) {
       // If search is empty, load latest products instead
       loadLatestProducts();
       return;
@@ -108,12 +110,16 @@ export default function CJProductImportPage() {
 
     try {
       const url = new URL("/api/cj/products/search-import", window.location.origin);
-      url.searchParams.append("keyword", searchTerm.trim());
+      url.searchParams.append("keyword", trimmedSearch);
       url.searchParams.append("pageNum", page.toString());
       url.searchParams.append("pageSize", pageSize.toString());
 
+      console.log('Searching for:', trimmedSearch); // Debug log
+
       const response = await fetch(url.toString());
       const result = await response.json();
+
+      console.log('Search result:', result); // Debug log
 
       if (!result.success) {
         throw new Error(result.error?.message || "Failed to search products");
@@ -124,10 +130,20 @@ export default function CJProductImportPage() {
       setCurrentPage(page);
       
       if (result.data.products.length === 0 && page === 1) {
-        setError(`No products found for "${searchTerm}". Try different keywords like "phone", "laptop", "headphones", "watch".`);
+        setError(
+          `No products found for "${trimmedSearch}". 
+          
+Tips for better results:
+• Try more general terms (e.g., "phone" instead of "iPhone 15 Pro Max")
+• Use single words or short phrases
+• Try product categories: "laptop", "headphones", "watch", "tablet", "camera"
+• Check spelling
+• Try brand names: "Samsung", "Sony", "Canon"`
+        );
       }
     } catch (error: any) {
-      setError(error.message);
+      setError(error.message || "Search failed. Please try again.");
+      console.error('Search error:', error);
     } finally {
       setLoading(false);
     }

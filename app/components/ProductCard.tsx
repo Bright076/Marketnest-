@@ -140,17 +140,17 @@ export default function ProductCard({
             flexDirection: "column",
             gap: "0.4rem",
             padding: "0.8rem",
-            background: "#fff7ed",
+            background: "#f0fdf4",
             borderRadius: "12px",
             fontSize: "0.85rem",
-            fontWeight: 500,
-            color: "#9a3412"
+            fontWeight: 600,
+            border: "2px solid #bbf7d0"
           }}
         >
-          <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-            <span style={{ fontSize: "1rem" }}>🌍</span> International Shipping
+          <span style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "#166534" }}>
+            <span style={{ fontSize: "1.1rem" }}>✅</span> FREE Shipping
           </span>
-          <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "#9a3412" }}>
             <span style={{ fontSize: "1rem" }}>📦</span> Quality Products
           </span>
         </div>

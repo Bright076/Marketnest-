@@ -47,6 +47,47 @@ export default function Home() {
     <>
       <HeroSection />
 
+      {/* Free Shipping Banner */}
+      <div style={{
+        background: "linear-gradient(135deg, #16a34a 0%, #059669 100%)",
+        padding: "1.5rem",
+        textAlign: "center",
+        boxShadow: "0 4px 12px rgba(22, 163, 74, 0.2)"
+      }}>
+        <div style={{
+          maxWidth: "1200px",
+          margin: "0 auto",
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: "2rem",
+          color: "#ffffff"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <span style={{ fontSize: "2rem" }}>🚚</span>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontWeight: 800, fontSize: "1.1rem" }}>FREE SHIPPING</div>
+              <div style={{ fontSize: "0.85rem", opacity: 0.9 }}>On All Orders</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <span style={{ fontSize: "2rem" }}>✅</span>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontWeight: 800, fontSize: "1.1rem" }}>QUALITY GUARANTEED</div>
+              <div style={{ fontSize: "0.85rem", opacity: 0.9 }}>100% Authentic Products</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <span style={{ fontSize: "2rem" }}>🌍</span>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontWeight: 800, fontSize: "1.1rem" }}>GLOBAL DELIVERY</div>
+              <div style={{ fontSize: "0.85rem", opacity: 0.9 }}>Worldwide Shipping</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Featured Products Section */}
       <section
         style={{
