@@ -67,8 +67,8 @@ export default function CJProductImportPage() {
 
     try {
       const url = new URL("/api/cj/products/search-import", window.location.origin);
-      // For latest products, use a generic term or empty keyword
-      url.searchParams.append("keyword", "phone"); // CJ API requires a keyword, use generic "phone" for latest
+      // For latest/popular products, use a broad generic term
+      url.searchParams.append("keyword", "");  // Empty for all products
       url.searchParams.append("pageNum", "1");
       url.searchParams.append("pageSize", pageSize.toString());
 
@@ -84,7 +84,7 @@ export default function CJProductImportPage() {
       setCurrentPage(1);
       
       if (result.data.products.length === 0) {
-        setError("No products available at the moment.");
+        setError("No products available at the moment. Try searching for specific products.");
       }
     } catch (error: any) {
       setError(error.message);
@@ -131,14 +131,7 @@ export default function CJProductImportPage() {
       
       if (result.data.products.length === 0 && page === 1) {
         setError(
-          `No products found for "${trimmedSearch}". 
-          
-Tips for better results:
-• Try more general terms (e.g., "phone" instead of "iPhone 15 Pro Max")
-• Use single words or short phrases
-• Try product categories: "laptop", "headphones", "watch", "tablet", "camera"
-• Check spelling
-• Try brand names: "Samsung", "Sony", "Canon"`
+          `No products found for "${trimmedSearch}". Try a different search term or browse the latest products below.`
         );
       }
     } catch (error: any) {
@@ -225,7 +218,9 @@ Tips for better results:
           🌍 CJ Product Import
         </h1>
         <p style={{ color: "#6b7280" }}>
-          {searchTerm ? `Search results for "${searchTerm}"` : "Browse latest products from CJDropShipping"}
+          {searchTerm 
+            ? `Showing results for "${searchTerm}"` 
+            : "Search for any product by name, brand, or description"}
         </p>
       </div>
 
@@ -241,7 +236,7 @@ Tips for better results:
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && handleSearch(1)}
-              placeholder="e.g., iPhone, laptop, headphones, smartwatch..."
+              placeholder="Search for any product... (e.g., iPhone 13, Samsung TV, wireless earbuds)"
               style={{
                 width: "100%",
                 padding: "0.75rem 1rem",

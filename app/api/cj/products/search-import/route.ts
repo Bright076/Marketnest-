@@ -20,14 +20,18 @@ export async function GET(request: NextRequest) {
     url.searchParams.append("pageNum", pageNum);
     url.searchParams.append("pageSize", pageSize);
     
-    // Add keyword to search in product name
+    // Add keyword to search - CJ searches across multiple fields automatically
     if (keyword) {
+      // Just use productNameEn - CJ will search in name, SKU, and description
       url.searchParams.append("productNameEn", keyword);
-      // Also search in product SKU for more results
-      url.searchParams.append("productSku", keyword);
     }
 
-    console.log('CJ API Request:', url.toString());
+    console.log('CJ API Search Request:', {
+      keyword: keyword,
+      page: pageNum,
+      size: pageSize,
+      url: url.toString()
+    });
 
     // Fetch products
     const response = await fetch(url.toString(), {
