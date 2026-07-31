@@ -29,7 +29,7 @@ export default function AdminNotificationsPage() {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, email, full_name')
-        .eq('is_admin', false)
+        .eq('role', 'user')
         .order('full_name');
 
       if (error) throw error;
