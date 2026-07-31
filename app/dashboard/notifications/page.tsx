@@ -286,7 +286,7 @@ export default function NotificationsPage() {
               {filter === 'unread' ? 'All caught up!' : 'No notifications yet'}
             </h3>
             <p style={{ color: "#6b7280" }}>
-              {filter === 'unread' ? 'You have no unread notifications.' : 'You'll receive notifications about your orders here.'}
+              {filter === 'unread' ? 'You have no unread notifications.' : 'You will receive notifications about your orders here.'}
             </p>
           </div>
         ) : (
