@@ -7,6 +7,7 @@ interface User {
   id: string;
   email: string;
   full_name: string;
+  role?: string;
 }
 
 export default function AdminNotificationsPage() {
@@ -26,27 +27,32 @@ export default function AdminNotificationsPage() {
 
   const loadUsers = async () => {
     try {
-      // First try to get non-admin users
-      let { data, error } = await supabase
+      // Get all profiles
+      const { data: allProfiles, error: profileError } = await supabase
         .from('profiles')
-        .select('id, email, full_name')
-        .neq('role', 'admin')
+        .select('id, email, full_name, role')
         .order('full_name');
 
-      // If that fails or returns empty, try without role filter
-      if (error || !data || data.length === 0) {
-        console.log('Trying to load all profiles...');
-        const result = await supabase
-          .from('profiles')
-          .select('id, email, full_name')
-          .order('full_name');
-        
-        if (result.error) throw result.error;
-        data = result.data;
+      if (profileError) {
+        console.error('Error loading profiles:', profileError);
+        throw profileError;
       }
       
-      console.log('Loaded users:', data);
-      setUsers(data || []);
+      console.log('All profiles loaded:', allProfiles);
+
+      // Filter out admins - check for both 'admin' role and null/undefined
+      const customerProfiles = allProfiles?.filter(profile => {
+        const isAdmin = profile.role === 'admin';
+        console.log(`Profile ${profile.email}: role=${profile.role}, isAdmin=${isAdmin}`);
+        return !isAdmin;
+      }) || [];
+      
+      console.log('Filtered customers:', customerProfiles);
+      setUsers(customerProfiles);
+
+      if (customerProfiles.length === 0) {
+        console.warn('No customer profiles found. All users might be admins or profiles table is empty.');
+      }
     } catch (error) {
       console.error('Error loading users:', error);
       alert('Failed to load customers. Check console for details.');
@@ -489,9 +495,12 @@ export default function AdminNotificationsPage() {
                   {users.filter(u => u.full_name).length}
                 </div>
                 <div style={{ fontSize: "0.8rem", color: "#166534" }}>
-                  Active Users
+                  With Profiles
                 </div>
               </div>
+            </div>
+            <div style={{ marginTop: "0.75rem", fontSize: "0.75rem", color: "#166534", fontStyle: "italic" }}>
+              (Admins excluded from customer list)
             </div>
           </div>
         </div>
