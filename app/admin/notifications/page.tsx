@@ -26,16 +26,30 @@ export default function AdminNotificationsPage() {
 
   const loadUsers = async () => {
     try {
-      const { data, error } = await supabase
+      // First try to get non-admin users
+      let { data, error } = await supabase
         .from('profiles')
         .select('id, email, full_name')
-        .eq('role', 'user')
+        .neq('role', 'admin')
         .order('full_name');
 
-      if (error) throw error;
+      // If that fails or returns empty, try without role filter
+      if (error || !data || data.length === 0) {
+        console.log('Trying to load all profiles...');
+        const result = await supabase
+          .from('profiles')
+          .select('id, email, full_name')
+          .order('full_name');
+        
+        if (result.error) throw result.error;
+        data = result.data;
+      }
+      
+      console.log('Loaded users:', data);
       setUsers(data || []);
     } catch (error) {
       console.error('Error loading users:', error);
+      alert('Failed to load customers. Check console for details.');
     }
   };
 
@@ -164,6 +178,21 @@ export default function AdminNotificationsPage() {
             Create Notification
           </h2>
 
+          {/* Debug Info */}
+          {users.length === 0 && (
+            <div style={{
+              marginBottom: "1.5rem",
+              padding: "1rem",
+              background: "#fef3c7",
+              borderRadius: "8px",
+              border: "1px solid #fde047"
+            }}>
+              <p style={{ fontSize: "0.85rem", color: "#92400e", margin: 0 }}>
+                ⚠️ No customers found. Check browser console for details, or verify that users have signed up.
+              </p>
+            </div>
+          )}
+
           <form onSubmit={sendNotification}>
             {/* Recipient Selection */}
             <div style={{ marginBottom: "1.5rem" }}>
@@ -224,7 +253,7 @@ export default function AdminNotificationsPage() {
                   <option value="">Choose a customer...</option>
                   {users.map(user => (
                     <option key={user.id} value={user.id}>
-                      {user.full_name} ({user.email})
+                      {user.full_name || 'No name'} ({user.email || 'No email'})
                     </option>
                   ))}
                 </select>
