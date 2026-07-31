@@ -55,12 +55,51 @@ export default function CJProductImportPage() {
     product_sku: "",
   });
 
-  // Load initial products
+  // Load initial products - show latest products by default
   useEffect(() => {
-    handleSearch(1);
+    loadLatestProducts();
   }, []);
 
+  const loadLatestProducts = async () => {
+    setLoading(true);
+    setError("");
+    setSearchTerm(""); // Clear search term to show we're loading latest
+
+    try {
+      const url = new URL("/api/cj/products/search-import", window.location.origin);
+      // For latest products, use a generic term or empty keyword
+      url.searchParams.append("keyword", "phone"); // CJ API requires a keyword, use generic "phone" for latest
+      url.searchParams.append("pageNum", "1");
+      url.searchParams.append("pageSize", pageSize.toString());
+
+      const response = await fetch(url.toString());
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error?.message || "Failed to load products");
+      }
+
+      setProducts(result.data.products || []);
+      setTotalProducts(result.data.total || 0);
+      setCurrentPage(1);
+      
+      if (result.data.products.length === 0) {
+        setError("No products available at the moment.");
+      }
+    } catch (error: any) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSearch = async (page: number = 1) => {
+    if (!searchTerm.trim()) {
+      // If search is empty, load latest products instead
+      loadLatestProducts();
+      return;
+    }
+
     setLoading(true);
     setError("");
     if (page === 1) {
@@ -69,7 +108,7 @@ export default function CJProductImportPage() {
 
     try {
       const url = new URL("/api/cj/products/search-import", window.location.origin);
-      url.searchParams.append("keyword", searchTerm);
+      url.searchParams.append("keyword", searchTerm.trim());
       url.searchParams.append("pageNum", page.toString());
       url.searchParams.append("pageSize", pageSize.toString());
 
@@ -85,7 +124,7 @@ export default function CJProductImportPage() {
       setCurrentPage(page);
       
       if (result.data.products.length === 0 && page === 1) {
-        setError("No products found. Try a different search term.");
+        setError(`No products found for "${searchTerm}". Try different keywords like "phone", "laptop", "headphones", "watch".`);
       }
     } catch (error: any) {
       setError(error.message);
@@ -170,14 +209,14 @@ export default function CJProductImportPage() {
           🌍 CJ Product Import
         </h1>
         <p style={{ color: "#6b7280" }}>
-          Search and import products from CJDropShipping into your store
+          {searchTerm ? `Search results for "${searchTerm}"` : "Browse latest products from CJDropShipping"}
         </p>
       </div>
 
       {/* Search Bar */}
       <div style={{ background: "#ffffff", padding: "2rem", borderRadius: "16px", border: "1px solid #e5e7eb", marginBottom: "2rem" }}>
-        <div style={{ display: "flex", gap: "1rem", alignItems: "flex-end" }}>
-          <div style={{ flex: 1 }}>
+        <div style={{ display: "flex", gap: "1rem", alignItems: "flex-end", flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: "250px" }}>
             <label style={{ display: "block", fontSize: "0.9rem", fontWeight: 600, color: "#374151", marginBottom: "0.5rem" }}>
               Search Products
             </label>
@@ -212,16 +251,39 @@ export default function CJProductImportPage() {
               display: "flex",
               alignItems: "center",
               gap: "0.5rem",
+              whiteSpace: "nowrap",
             }}
           >
             {loading && <ButtonSpinner />}
             {loading ? "Searching..." : "🔍 Search"}
           </button>
+          {searchTerm && (
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                loadLatestProducts();
+              }}
+              disabled={loading}
+              style={{
+                padding: "0.75rem 1.5rem",
+                background: "#f3f4f6",
+                color: "#374151",
+                border: "1px solid #e5e7eb",
+                borderRadius: "8px",
+                fontSize: "1rem",
+                fontWeight: 600,
+                cursor: loading ? "not-allowed" : "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              ✕ Clear
+            </button>
+          )}
         </div>
 
         {totalProducts > 0 && (
           <div style={{ marginTop: "1rem", color: "#6b7280", fontSize: "0.9rem" }}>
-            Found {totalProducts} products
+            {searchTerm ? `Found ${totalProducts} products matching "${searchTerm}"` : `Showing ${products.length} latest products`}
           </div>
         )}
       </div>
