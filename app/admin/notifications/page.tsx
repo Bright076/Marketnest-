@@ -27,6 +27,8 @@ export default function AdminNotificationsPage() {
 
   const loadUsers = async () => {
     try {
+      console.log('🔍 Loading all profiles from database...');
+      
       // Get all profiles
       const { data: allProfiles, error: profileError } = await supabase
         .from('profiles')
@@ -34,30 +36,47 @@ export default function AdminNotificationsPage() {
         .order('full_name');
 
       if (profileError) {
-        console.error('Error loading profiles:', profileError);
+        console.error('❌ Error loading profiles:', profileError);
         throw profileError;
       }
       
-      console.log('All profiles loaded:', allProfiles);
+      console.log('📋 Total profiles found:', allProfiles?.length || 0);
+      console.log('📋 All profiles:', allProfiles);
 
-      // Filter: Include users with role='user' OR role=null/undefined
-      // Exclude ONLY users with role='admin'
-      const customerProfiles = allProfiles?.filter(profile => {
+      if (!allProfiles || allProfiles.length === 0) {
+        console.warn('⚠️ NO PROFILES FOUND in database!');
+        setUsers([]);
+        return;
+      }
+
+      // Filter: Exclude ONLY users with role='admin'
+      // Include everyone else (role='user', role=null, role='', or role undefined)
+      const customerProfiles = allProfiles.filter(profile => {
         const role = profile.role;
-        const isCustomer = role === 'user' || role === null || role === undefined || role === '';
-        console.log(`Profile ${profile.email}: role="${role}", isCustomer=${isCustomer}`);
+        const isAdmin = role === 'admin';
+        const isCustomer = !isAdmin;
+        
+        console.log(`👤 Profile: ${profile.email || profile.id}`);
+        console.log(`   - Role: "${role}" (${typeof role})`);
+        console.log(`   - Is Admin: ${isAdmin}`);
+        console.log(`   - Is Customer: ${isCustomer}`);
+        
         return isCustomer;
-      }) || [];
+      });
       
-      console.log('Filtered customers (role=user or null):', customerProfiles);
+      console.log('✅ Customers found (excluding admins):', customerProfiles.length);
+      console.log('👥 Customer list:', customerProfiles);
+      
       setUsers(customerProfiles);
 
       if (customerProfiles.length === 0) {
-        console.warn('No customer profiles found. Make sure users have role="user" or role=null in Supabase profiles table.');
+        console.warn('⚠️ NO CUSTOMERS FOUND!');
+        console.warn('All users appear to be admins or profiles table is empty.');
+        console.warn('To fix: Make sure non-admin users exist in profiles table.');
       }
     } catch (error) {
-      console.error('Error loading users:', error);
-      alert('Failed to load customers. Check console for details.');
+      console.error('❌ Error loading users:', error);
+      alert('Failed to load customers. Check browser console for details.');
     }
   };
 

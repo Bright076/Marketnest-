@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Product } from "../data/products";
+import { supabase } from "@/lib/supabaseClient";
 
 export interface CartItem extends Product {
   quantity: number;
@@ -22,40 +23,85 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isClient, setIsClient] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
+  // Load cart based on current user
   useEffect(() => {
     setIsClient(true);
-    // Only load cart from localStorage if it exists
-    // This ensures new users start with an empty cart
-    const savedCart = localStorage.getItem("marketnest_cart");
-    if (savedCart) {
-      try {
-        const parsedCart = JSON.parse(savedCart);
-        // Ensure it's a valid array
-        if (Array.isArray(parsedCart)) {
-          setCart(parsedCart);
-        } else {
-          // Invalid cart data, start fresh
+    
+    const loadUserCart = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id || null;
+      setCurrentUserId(userId);
+      
+      // Use user-specific cart key
+      const cartKey = userId ? `marketnest_cart_${userId}` : "marketnest_cart_guest";
+      const savedCart = localStorage.getItem(cartKey);
+      
+      if (savedCart) {
+        try {
+          const parsedCart = JSON.parse(savedCart);
+          if (Array.isArray(parsedCart)) {
+            setCart(parsedCart);
+          } else {
+            setCart([]);
+            localStorage.removeItem(cartKey);
+          }
+        } catch (e) {
+          console.error("Cart parse error", e);
           setCart([]);
-          localStorage.removeItem("marketnest_cart");
+          localStorage.removeItem(cartKey);
         }
-      } catch (e) {
-        console.error("Cart parse error", e);
-        // If parsing fails, start with empty cart
+      } else {
         setCart([]);
-        localStorage.removeItem("marketnest_cart");
       }
-    } else {
-      // No saved cart, start with empty cart
-      setCart([]);
-    }
+    };
+    
+    loadUserCart();
+    
+    // Listen for auth changes (login/logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      const newUserId = session?.user?.id || null;
+      
+      if (event === 'SIGNED_OUT') {
+        // Clear cart on logout
+        setCart([]);
+        setCurrentUserId(null);
+      } else if (newUserId !== currentUserId) {
+        // User changed, load their cart
+        setCurrentUserId(newUserId);
+        const cartKey = newUserId ? `marketnest_cart_${newUserId}` : "marketnest_cart_guest";
+        const savedCart = localStorage.getItem(cartKey);
+        
+        if (savedCart) {
+          try {
+            const parsedCart = JSON.parse(savedCart);
+            if (Array.isArray(parsedCart)) {
+              setCart(parsedCart);
+            } else {
+              setCart([]);
+            }
+          } catch (e) {
+            setCart([]);
+          }
+        } else {
+          setCart([]);
+        }
+      }
+    });
+    
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
+  // Save cart to localStorage with user-specific key
   useEffect(() => {
-    if (isClient) {
-      localStorage.setItem("marketnest_cart", JSON.stringify(cart));
+    if (isClient && currentUserId !== undefined) {
+      const cartKey = currentUserId ? `marketnest_cart_${currentUserId}` : "marketnest_cart_guest";
+      localStorage.setItem(cartKey, JSON.stringify(cart));
     }
-  }, [cart, isClient]);
+  }, [cart, isClient, currentUserId]);
 
   const addToCart = (product: Product) => {
     setCart((prev) => {

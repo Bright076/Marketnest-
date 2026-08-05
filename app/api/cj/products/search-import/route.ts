@@ -31,21 +31,22 @@ export async function GET(request: NextRequest) {
     if (keyword.trim()) {
       const trimmedKeyword = keyword.trim();
       
-      // Check if it looks like a PID (usually starts with specific patterns)
-      // CJ PIDs are often numeric or alphanumeric
-      const isPID = /^[A-Z0-9]{6,}$/i.test(trimmedKeyword);
+      // Check if it looks like a PID (CJ PIDs are typically long alphanumeric codes)
+      // Examples: CJ12345678, AB123456CD
+      const possiblyPID = /^[A-Z0-9]{8,}$/i.test(trimmedKeyword);
       
-      // Check if it looks like a SKU
-      const isSKU = /^[A-Z0-9\-_]{3,}$/i.test(trimmedKeyword) && trimmedKeyword.includes('-');
+      // Check if it looks like a SKU (usually has dashes, underscores, or mixed format)
+      // Examples: ABC-123, PROD_SKU_001, AB-CD-123
+      const possiblySKU = /[A-Z0-9]+-[A-Z0-9]+|[A-Z0-9]+_[A-Z0-9]+/i.test(trimmedKeyword);
       
-      if (isPID && trimmedKeyword.length >= 10) {
-        // Search by PID
+      if (possiblyPID && !possiblySKU) {
+        // Likely a PID - long alphanumeric without separators
         url.searchParams.append("pid", trimmedKeyword);
-        console.log('🆔 Searching by PID:', trimmedKeyword);
-      } else if (isSKU) {
-        // Search by SKU
+        console.log('🆔 Detected PID format, searching by PID:', trimmedKeyword);
+      } else if (possiblySKU) {
+        // Has dashes or underscores - likely SKU
         url.searchParams.append("productSku", trimmedKeyword);
-        console.log('🏷️ Searching by SKU:', trimmedKeyword);
+        console.log('🏷️ Detected SKU format, searching by SKU:', trimmedKeyword);
       } else {
         // Default: search by product name
         url.searchParams.append("productNameEn", trimmedKeyword);
