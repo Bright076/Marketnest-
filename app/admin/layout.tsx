@@ -15,6 +15,7 @@ export default function AdminLayout({
   const pathname = usePathname();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     verifyAdmin();  
@@ -49,7 +50,8 @@ export default function AdminLayout({
     
     return (
       <Link 
-        href={href} 
+        href={href}
+        onClick={() => setMobileMenuOpen(false)}
         style={{
           display: "flex",
           alignItems: "center",
@@ -117,6 +119,50 @@ export default function AdminLayout({
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#f9fafb" }}>
+      {/* Mobile Header */}
+      <div style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        height: "60px",
+        background: "#ffffff",
+        borderBottom: "1px solid #e5e7eb",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "0 1rem",
+        zIndex: 100
+      }}
+      className="mobile-header">
+        <h1 style={{
+          fontSize: "1.25rem",
+          fontWeight: 900,
+          background: "linear-gradient(135deg, #16a34a 0%, #059669 100%)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          backgroundClip: "text",
+          margin: 0
+        }}>
+          MarketNest
+        </h1>
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          style={{
+            padding: "0.5rem",
+            background: "transparent",
+            border: "1px solid #e5e7eb",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontSize: "1.5rem",
+            lineHeight: 1
+          }}
+          aria-label="Toggle menu"
+        >
+          {mobileMenuOpen ? "✕" : "☰"}
+        </button>
+      </div>
+
       {/* Sidebar */}
       <aside style={{
         width: "260px",
@@ -125,10 +171,14 @@ export default function AdminLayout({
         padding: "2rem 0",
         position: "fixed",
         height: "100vh",
-        overflowY: "auto"
-      }}>
-        {/* Logo */}
-        <div style={{ padding: "0 1.5rem", marginBottom: "2rem" }}>
+        overflowY: "auto",
+        transform: mobileMenuOpen ? "translateX(0)" : "translateX(-100%)",
+        transition: "transform 0.3s ease-in-out",
+        zIndex: 99
+      }}
+      className="sidebar">
+        {/* Logo - Desktop Only */}
+        <div style={{ padding: "0 1.5rem", marginBottom: "2rem" }} className="desktop-logo">
           <h1 style={{
             fontSize: "1.5rem",
             fontWeight: 900,
@@ -156,11 +206,14 @@ export default function AdminLayout({
         </nav>
 
         {/* Logout Button */}
-        <div style={{ padding: "0 1rem", marginTop: "auto", position: "absolute", bottom: "2rem", width: "100%" }}>
+        <div style={{ padding: "0 1rem", marginTop: "2rem" }}>
           <button
-            onClick={handleLogout}
+            onClick={() => {
+              setMobileMenuOpen(false);
+              handleLogout();
+            }}
             style={{
-              width: "calc(100% - 2rem)",
+              width: "100%",
               padding: "0.75rem 1rem",
               background: "#fef2f2",
               color: "#dc2626",
@@ -188,15 +241,64 @@ export default function AdminLayout({
         </div>
       </aside>
 
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          style={{
+            position: "fixed",
+            top: "60px",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.5)",
+            zIndex: 98
+          }}
+          className="mobile-overlay"
+        />
+      )}
+
       {/* Main Content */}
       <main style={{
         marginLeft: "260px",
         flex: 1,
         padding: "2rem",
         minHeight: "100vh"
-      }}>
+      }}
+      className="main-content">
         {children}
       </main>
+
+      {/* Responsive Styles */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @media (min-width: 769px) {
+          .mobile-header {
+            display: none !important;
+          }
+          .sidebar {
+            transform: translateX(0) !important;
+          }
+        }
+        
+        @media (max-width: 768px) {
+          .desktop-logo {
+            display: none !important;
+          }
+          .sidebar {
+            top: 60px !important;
+            height: calc(100vh - 60px) !important;
+            padding-top: 1rem !important;
+          }
+          .main-content {
+            margin-left: 0 !important;
+            padding: 1rem !important;
+            padding-top: calc(60px + 1rem) !important;
+          }
+          .mobile-overlay {
+            display: block;
+          }
+        }
+      `}} />
     </div>
   );
 }
