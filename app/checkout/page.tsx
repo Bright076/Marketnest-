@@ -22,21 +22,11 @@ export default function CheckoutPage() {
     customer_postal_code: "",
     order_notes: ""
   });
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "crypto">("card");
   const currency = "USD"; // Always USD
 
   useEffect(() => {
     checkAuthAndLoadProfile();
   }, []);
-
-  useEffect(() => {
-    // Update payment method based on country
-    if (formData.customer_country === "Nigeria") {
-      setPaymentMethod("card");
-    } else {
-      setPaymentMethod("crypto");
-    }
-  }, [formData.customer_country]);
 
   const checkAuthAndLoadProfile = async () => {
     try {
@@ -122,7 +112,7 @@ export default function CheckoutPage() {
               order_notes: formData.order_notes || null,
               amount_paid: itemTotal,
               currency: "USD",
-              payment_method: paymentMethod,
+              payment_method: "pending", // Testing mode - no payment required yet
               payment_status: 'pending',
               order_status: 'pending'
             }
@@ -172,7 +162,7 @@ export default function CheckoutPage() {
               postalCode: formData.customer_postal_code,
               notes: formData.order_notes
             },
-            paymentMethod: paymentMethod,
+            paymentMethod: "Testing Mode",
             totalAmount: totalAmount,
             currency: "USD"
           })
@@ -529,39 +519,32 @@ export default function CheckoutPage() {
                 />
               </div>
 
-              {/* Payment Method Info */}
+              {/* Testing Mode Notice */}
               <div style={{
                 marginBottom: "2rem",
                 padding: "1.5rem",
-                background: formData.customer_country === "Nigeria" ? "#eff6ff" : "#f0fdf4",
+                background: "#fef3c7",
                 borderRadius: "12px",
-                border: formData.customer_country === "Nigeria" ? "2px solid #bfdbfe" : "2px solid #bbf7d0"
+                border: "2px solid #fde047"
               }}>
                 <h3 style={{ 
                   fontSize: "1rem", 
                   fontWeight: 700, 
-                  color: formData.customer_country === "Nigeria" ? "#1e40af" : "#166534",
-                  marginBottom: "0.75rem" 
+                  color: "#92400e",
+                  marginBottom: "0.75rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem"
                 }}>
-                  💳 Payment Method
+                  🧪 Testing Mode
                 </h3>
                 <p style={{ 
                   fontSize: "0.9rem", 
-                  color: formData.customer_country === "Nigeria" ? "#1e40af" : "#166534",
+                  color: "#92400e",
                   margin: 0,
                   lineHeight: 1.6
                 }}>
-                  {formData.customer_country === "Nigeria" ? (
-                    <>
-                      <strong>Card Payment (USD)</strong><br />
-                      Pay securely with debit/credit card. Amount in US Dollars.
-                    </>
-                  ) : (
-                    <>
-                      <strong>Crypto Payment (USD)</strong><br />
-                      You will receive wallet address after placing your order.
-                    </>
-                  )}
+                  Payment is disabled for testing. This order will test delivery details collection and admin email notifications only.
                 </p>
               </div>
 
@@ -582,7 +565,7 @@ export default function CheckoutPage() {
                   boxShadow: submitting ? "none" : "0 4px 12px rgba(22, 163, 74, 0.3)"
                 }}
               >
-                {submitting ? "Processing..." : `Place Order ($${displayTotal.toFixed(2)} USD)`}
+                {submitting ? "Processing..." : `Place Test Order - $${displayTotal.toFixed(2)} USD`}
               </button>
             </form>
           </div>
@@ -659,7 +642,7 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Currency Info */}
+            {/* Testing Mode Info */}
             <div style={{
               marginTop: "1.5rem",
               padding: "1rem",
@@ -668,7 +651,7 @@ export default function CheckoutPage() {
               border: "1px solid #fde047"
             }}>
               <p style={{ fontSize: "0.85rem", color: "#92400e", margin: 0 }}>
-                💡 All prices in US Dollars (USD). {formData.customer_country === "Nigeria" ? "Card payment accepted." : "Crypto payment available."}
+                🧪 <strong>Testing Mode:</strong> Payment is disabled. This tests delivery details and email notifications only.
               </p>
             </div>
           </div>

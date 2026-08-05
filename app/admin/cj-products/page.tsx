@@ -228,10 +228,16 @@ export default function CJProductImportPage() {
         <h1 style={{ fontSize: "2rem", fontWeight: 800, color: "#111827", marginBottom: "0.5rem" }}>
           🌍 CJ Product Import
         </h1>
-        <p style={{ color: "#6b7280" }}>
+        <p style={{ color: "#6b7280", marginBottom: "0.5rem" }}>
           {searchTerm 
             ? `Showing results for "${searchTerm}"` 
             : "Search for any product by name, brand, or description"}
+        </p>
+        <p style={{ color: "#16a34a", fontSize: "0.875rem", fontWeight: 600 }}>
+          💡 Tip: Search works like CJDropShipping - try "phone", "laptop", "watch", "wireless earbuds"
+        </p>
+        <p style={{ color: "#9ca3af", fontSize: "0.75rem", marginTop: "0.25rem" }}>
+          Version: 2.1 (Enhanced Search & Logging)
         </p>
       </div>
 
