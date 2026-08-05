@@ -137,7 +137,7 @@ export default function CJProductImportPage() {
       setCurrentPage(page);
       
       if (foundProducts.length === 0 && page === 1) {
-        setError(`No products found for "${trimmedSearch}". Try a different term.`);
+        setError(`No products found for "${trimmedSearch}". Try different keywords or check spelling.`);
       } else if (foundProducts.length > 0) {
         console.log('✅ First 3 products:', foundProducts.slice(0, 3).map((p: CJProduct) => ({
           name: p.productNameEn || p.productName,
@@ -231,13 +231,32 @@ export default function CJProductImportPage() {
         <p style={{ color: "#6b7280", marginBottom: "0.5rem" }}>
           {searchTerm 
             ? `Showing results for "${searchTerm}"` 
-            : "Search for any product by name, brand, or description"}
+            : "Search for products from CJDropshipping by name, brand, or keywords"}
         </p>
-        <p style={{ color: "#16a34a", fontSize: "0.875rem", fontWeight: 600 }}>
-          💡 Tip: Search works like CJDropShipping - try "phone", "laptop", "watch", "wireless earbuds"
-        </p>
-        <p style={{ color: "#9ca3af", fontSize: "0.75rem", marginTop: "0.25rem" }}>
-          Version: 2.1 (Enhanced Search & Logging)
+        <div style={{ 
+          background: "#f0fdf4", 
+          padding: "1rem", 
+          borderRadius: "8px", 
+          border: "1px solid #bbf7d0",
+          marginTop: "0.75rem"
+        }}>
+          <p style={{ color: "#166534", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.5rem" }}>
+            💡 How Search Works:
+          </p>
+          <ul style={{ 
+            color: "#166534", 
+            fontSize: "0.875rem", 
+            margin: 0, 
+            paddingLeft: "1.5rem",
+            lineHeight: "1.6"
+          }}>
+            <li><strong>Exact product name:</strong> Type exact name from CJ → Shows that specific product</li>
+            <li><strong>Keyword/partial name:</strong> Type part of name or brand → Shows related products</li>
+            <li>Example: "iPhone 14 Pro" (exact) or just "iPhone" (shows all iPhones)</li>
+          </ul>
+        </div>
+        <p style={{ color: "#9ca3af", fontSize: "0.75rem", marginTop: "0.5rem" }}>
+          Version: 2.3 (Smart Search - Exact & Related)
         </p>
       </div>
 
@@ -253,7 +272,7 @@ export default function CJProductImportPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && handleSearch(1)}
-              placeholder="Search for any product... (e.g., iPhone 13, Samsung TV, wireless earbuds)"
+              placeholder="Search by name, brand, or keyword... (e.g., iPhone, Samsung TV, wireless earbuds)"
               style={{
                 width: "100%",
                 padding: "0.75rem 1rem",
