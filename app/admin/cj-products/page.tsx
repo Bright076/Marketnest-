@@ -139,6 +139,14 @@ export default function CJProductImportPage() {
       if (foundProducts.length === 0 && page === 1) {
         setError(`No products found for "${trimmedSearch}". Try different keywords or check spelling.`);
       } else if (foundProducts.length > 0) {
+        // Check if exact match was found
+        if (result.searchInfo?.exactMatchFound) {
+          setSuccessMessage(`✅ Found exact product: "${result.searchInfo.exactMatchName}"`);
+          setTimeout(() => setSuccessMessage(""), 5000);
+        } else if (page === 1) {
+          setError(`⚠️ No exact match for "${trimmedSearch}". Showing ${foundProducts.length} related products with matching keywords. Try copying the exact product name from CJ website.`);
+        }
+        
         console.log('✅ First 3 products:', foundProducts.slice(0, 3).map((p: CJProduct) => ({
           name: p.productNameEn || p.productName,
           price: p.sellPrice,
@@ -241,22 +249,30 @@ export default function CJProductImportPage() {
           marginTop: "0.75rem"
         }}>
           <p style={{ color: "#166534", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.5rem" }}>
-            💡 How Search Works:
+            💡 Search Options:
           </p>
           <ul style={{ 
             color: "#166534", 
             fontSize: "0.875rem", 
             margin: 0, 
             paddingLeft: "1.5rem",
-            lineHeight: "1.6"
+            lineHeight: "1.8"
           }}>
-            <li><strong>Exact product name:</strong> Type exact name from CJ → Shows that specific product</li>
-            <li><strong>Keyword/partial name:</strong> Type part of name or brand → Shows related products</li>
-            <li>Example: "iPhone 14 Pro" (exact) or just "iPhone" (shows all iPhones)</li>
+            <li><strong>By PID (Product ID):</strong> Paste the PID from CJ → Finds EXACT product</li>
+            <li><strong>By SKU:</strong> Paste the SKU from CJ → Finds EXACT product</li>
+            <li><strong>By Name/Keywords:</strong> Type product name or keywords → Shows related products</li>
           </ul>
+          <p style={{ 
+            color: "#166534", 
+            fontSize: "0.8rem", 
+            margin: "0.5rem 0 0 0",
+            fontStyle: "italic"
+          }}>
+            💡 Tip: For exact product match, use PID or SKU (found on CJ product page)
+          </p>
         </div>
         <p style={{ color: "#9ca3af", fontSize: "0.75rem", marginTop: "0.5rem" }}>
-          Version: 2.3 (Smart Search - Exact & Related)
+          Version: 2.4 (Smart Search - PID, SKU, Name)
         </p>
       </div>
 
@@ -272,7 +288,7 @@ export default function CJProductImportPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && handleSearch(1)}
-              placeholder="Search by name, brand, or keyword... (e.g., iPhone, Samsung TV, wireless earbuds)"
+              placeholder="Search by PID, SKU, or product name... (e.g., CJ12345678, ABC-SKU-001, iPhone)"
               style={{
                 width: "100%",
                 padding: "0.75rem 1rem",

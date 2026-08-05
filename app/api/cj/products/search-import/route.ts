@@ -27,11 +27,30 @@ export async function GET(request: NextRequest) {
     url.searchParams.append("pageNum", pageNum);
     url.searchParams.append("pageSize", pageSize);
     
-    // Add keyword to search if provided
-    // CJ API searches across product name, SKU, and other fields
+    // Detect search type and add appropriate parameter
     if (keyword.trim()) {
-      url.searchParams.append("productNameEn", keyword.trim());
-      console.log('📝 Search parameter added: productNameEn =', keyword.trim());
+      const trimmedKeyword = keyword.trim();
+      
+      // Check if it looks like a PID (usually starts with specific patterns)
+      // CJ PIDs are often numeric or alphanumeric
+      const isPID = /^[A-Z0-9]{6,}$/i.test(trimmedKeyword);
+      
+      // Check if it looks like a SKU
+      const isSKU = /^[A-Z0-9\-_]{3,}$/i.test(trimmedKeyword) && trimmedKeyword.includes('-');
+      
+      if (isPID && trimmedKeyword.length >= 10) {
+        // Search by PID
+        url.searchParams.append("pid", trimmedKeyword);
+        console.log('🆔 Searching by PID:', trimmedKeyword);
+      } else if (isSKU) {
+        // Search by SKU
+        url.searchParams.append("productSku", trimmedKeyword);
+        console.log('🏷️ Searching by SKU:', trimmedKeyword);
+      } else {
+        // Default: search by product name
+        url.searchParams.append("productNameEn", trimmedKeyword);
+        console.log('📝 Searching by product name:', trimmedKeyword);
+      }
     } else {
       console.log('📋 No search keyword - fetching all products');
     }
@@ -66,11 +85,24 @@ export async function GET(request: NextRequest) {
 
     // Get products and sort them by relevance if keyword exists
     let products = result.data?.list || [];
+    let exactMatch = null;
     
     if (keyword.trim() && products.length > 0) {
       const searchLower = keyword.trim().toLowerCase();
       
       console.log('🎯 Sorting products by relevance for:', searchLower);
+      
+      // Check for exact match first
+      exactMatch = products.find((p: any) => {
+        const pName = (p.productNameEn || p.productName || '').toLowerCase();
+        return pName === searchLower;
+      });
+      
+      if (exactMatch) {
+        console.log('✅ EXACT MATCH FOUND:', exactMatch.productNameEn || exactMatch.productName);
+      } else {
+        console.log('⚠️ NO EXACT MATCH - Showing related products with matching keywords');
+      }
       
       // Sort products by relevance
       products = products.sort((a: any, b: any) => {
@@ -99,10 +131,15 @@ export async function GET(request: NextRequest) {
         if (bIndex !== -1) return 1;
         
         // Priority 4: Word boundary match
-        const aWordMatch = aName.match(new RegExp(`\\b${searchLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i'));
-        const bWordMatch = bName.match(new RegExp(`\\b${searchLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i'));
-        if (aWordMatch && !bWordMatch) return -1;
-        if (!aWordMatch && bWordMatch) return 1;
+        try {
+          const escapedSearch = searchLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const aWordMatch = aName.match(new RegExp(`\\b${escapedSearch}`, 'i'));
+          const bWordMatch = bName.match(new RegExp(`\\b${escapedSearch}`, 'i'));
+          if (aWordMatch && !bWordMatch) return -1;
+          if (!aWordMatch && bWordMatch) return 1;
+        } catch (e) {
+          // Regex error, skip this priority
+        }
         
         // Default: keep original order
         return 0;
@@ -128,6 +165,8 @@ export async function GET(request: NextRequest) {
         resultsReturned: products.length,
         totalAvailable: result.data?.total || 0,
         sortedByRelevance: keyword.trim() !== '',
+        exactMatchFound: exactMatch !== null,
+        exactMatchName: exactMatch ? (exactMatch.productNameEn || exactMatch.productName) : null
       }
     };
 
