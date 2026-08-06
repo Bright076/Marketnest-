@@ -16,7 +16,11 @@ export const metadata: Metadata = {
   description:
     "Discover quality products at unbeatable prices. Shop from our curated collection or grab exclusive partner deals with fast delivery.",
   icons: {
-    icon: "/1000282492.png",
+    icon: [
+      { url: "/1000282492.png", sizes: "any" },
+      { url: "/1000282492.png", sizes: "16x16", type: "image/png" },
+      { url: "/1000282492.png", sizes: "32x32", type: "image/png" },
+    ],
     shortcut: "/1000282492.png",
     apple: "/1000282492.png",
   },
@@ -35,11 +39,15 @@ export default function RootLayout({
           display: "flex",
           flexDirection: "column",
           margin: 0,
+          overflow: "hidden",
+          overflowY: "auto",
+          width: "100%",
+          maxWidth: "100vw",
         }}
       >
         <Providers>
           <Navbar />
-          <main style={{ flexGrow: 1 }}>{children}</main>
+          <main style={{ flexGrow: 1, width: "100%", overflow: "hidden" }}>{children}</main>
           <Footer />
         </Providers>
       </body>
