@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 import { ButtonSpinner } from "./LoadingSpinner";
 
 interface ProductCardProps {
-  id?: number;
+  id?: string | number;  // Support both UUID strings and numbers
   name: string;
   price: string;
   image: string;
@@ -17,7 +17,7 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({
-  id = Date.now(),
+  id = Date.now().toString(),  // Default to string timestamp
   name,
   price,
   image,

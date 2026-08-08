@@ -158,7 +158,7 @@ export default function ProductsPage() {
           {filteredProducts.map((product) => (
             <ProductCard
               key={product.id}
-              id={parseInt(product.id)}
+              id={product.id}
               name={product.title}
               price={`$${product.selling_price.toFixed(2)}`}
               image={product.image_url}

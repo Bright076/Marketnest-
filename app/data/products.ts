@@ -1,5 +1,5 @@
 export interface Product {
-  id: number;
+  id: number | string;  // Support both integer and UUID
   name: string;
   price: string;
   image: string;

@@ -11,8 +11,8 @@ export interface CartItem extends Product {
 interface CartContextType {
   cart: CartItem[];
   addToCart: (product: Product) => void;
-  removeFromCart: (id: number) => void;
-  updateQuantity: (id: number, quantity: number) => void;
+  removeFromCart: (id: number | string) => void;  // Support both types
+  updateQuantity: (id: number | string, quantity: number) => void;  // Support both types
   clearCart: () => void;
   cartTotal: number;
   totalItems: number;
@@ -144,11 +144,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const removeFromCart = (id: number) => {
+  const removeFromCart = (id: number | string) => {
     setCart((prev) => prev.filter((item) => item.id !== id));
   };
 
-  const updateQuantity = (id: number, quantity: number) => {
+  const updateQuantity = (id: number | string, quantity: number) => {
     if (quantity < 1) return;
     setCart((prev) =>
       prev.map((item) => (item.id === id ? { ...item, quantity } : item))
