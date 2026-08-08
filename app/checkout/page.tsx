@@ -142,34 +142,50 @@ export default function CheckoutPage() {
 
       const orders = await Promise.all(orderPromises);
 
+      // Prepare notification payload
+      const notificationPayload = {
+        orders: orders,
+        customerInfo: {
+          name: formData.customer_name,
+          email: formData.customer_email,
+          phone: formData.customer_phone
+        },
+        deliveryInfo: {
+          country: formData.customer_country,
+          state: formData.customer_state,
+          city: formData.customer_city,
+          address: formData.customer_address,
+          postalCode: formData.customer_postal_code,
+          notes: formData.order_notes
+        },
+        paymentMethod: "Testing Mode",
+        totalAmount: totalAmount,
+        currency: "USD"
+      };
+
       // Send admin notification email for all orders
       try {
         await fetch('/api/admin/order-notification', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orders: orders,
-            customerInfo: {
-              name: formData.customer_name,
-              email: formData.customer_email,
-              phone: formData.customer_phone
-            },
-            deliveryInfo: {
-              country: formData.customer_country,
-              state: formData.customer_state,
-              city: formData.customer_city,
-              address: formData.customer_address,
-              postalCode: formData.customer_postal_code,
-              notes: formData.order_notes
-            },
-            paymentMethod: "Testing Mode",
-            totalAmount: totalAmount,
-            currency: "USD"
-          })
+          body: JSON.stringify(notificationPayload)
         });
       } catch (emailError) {
         console.error('Failed to send admin notification:', emailError);
         // Don't fail the order if email fails
+      }
+
+      // Send Telegram notification to admin
+      try {
+        await fetch('/api/telegram-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(notificationPayload)
+        });
+        console.log('✅ Telegram notification sent');
+      } catch (telegramError) {
+        console.error('Failed to send Telegram notification:', telegramError);
+        // Don't fail the order if Telegram fails
       }
 
       // Clear cart

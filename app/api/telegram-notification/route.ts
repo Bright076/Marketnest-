@@ -1,0 +1,92 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { orders, customerInfo, deliveryInfo, totalAmount, currency } = body;
+
+    // Get Telegram credentials from environment
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+
+    // Check if Telegram is configured
+    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+      console.log('⚠️ Telegram not configured - skipping notification');
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Telegram not configured' 
+      });
+    }
+
+    // Build message text
+    const message = `
+🎉 *NEW ORDER RECEIVED!*
+
+👤 *Customer Details:*
+Name: ${customerInfo.name}
+Email: ${customerInfo.email}
+Phone: ${customerInfo.phone}
+
+📦 *Order Summary:*
+Total Amount: *$${totalAmount.toFixed(2)} ${currency}*
+Number of Items: ${orders.length}
+
+🚚 *Delivery Address:*
+${deliveryInfo.address}
+${deliveryInfo.city}, ${deliveryInfo.state}
+${deliveryInfo.country}
+${deliveryInfo.postalCode ? `Postal Code: ${deliveryInfo.postalCode}` : ''}
+
+${deliveryInfo.notes ? `📝 *Order Notes:*\n${deliveryInfo.notes}\n` : ''}
+---
+💻 View in admin dashboard:
+https://marketnest-shop-one.vercel.app/admin/orders
+
+⏰ ${new Date().toLocaleString('en-US', { 
+  dateStyle: 'full', 
+  timeStyle: 'short',
+  timeZone: 'Africa/Lagos'
+})}
+    `.trim();
+
+    // Send to Telegram
+    const telegramResponse = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: message,
+          parse_mode: 'Markdown',
+        }),
+      }
+    );
+
+    const telegramResult = await telegramResponse.json();
+
+    if (!telegramResult.ok) {
+      console.error('❌ Telegram API error:', telegramResult);
+      throw new Error(telegramResult.description || 'Failed to send Telegram message');
+    }
+
+    console.log('✅ Telegram notification sent successfully!');
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Telegram notification sent' 
+    });
+
+  } catch (error: any) {
+    console.error('❌ Error sending Telegram notification:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: error.message || 'Failed to send notification' 
+      },
+      { status: 500 }
+    );
+  }
+}
