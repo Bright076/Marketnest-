@@ -343,6 +343,45 @@ export default function DashboardPage() {
             gap: "1.25rem",
           }}
         >
+          {/* My Orders - NEW */}
+          <Link
+            href="/my-orders"
+            style={{
+              background: "#ffffff",
+              padding: "1.75rem 1.5rem",
+              borderRadius: "18px",
+              boxShadow: "0 8px 25px rgba(0, 0, 0, 0.06)",
+              textDecoration: "none",
+              transition: "all 0.3s",
+              border: "2px solid transparent",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-4px)";
+              e.currentTarget.style.boxShadow = "0 12px 35px rgba(0, 0, 0, 0.1)";
+              e.currentTarget.style.borderColor = "#16a34a";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 8px 25px rgba(0, 0, 0, 0.06)";
+              e.currentTarget.style.borderColor = "transparent";
+            }}
+          >
+            <div style={{ fontSize: "2.25rem", marginBottom: "0.875rem" }}>📦</div>
+            <h3
+              style={{
+                fontSize: "clamp(1.05rem, 3.5vw, 1.25rem)",
+                fontWeight: 700,
+                color: "#111827",
+                margin: "0 0 0.5rem",
+              }}
+            >
+              My Orders
+            </h3>
+            <p style={{ color: "#6b7280", fontSize: "clamp(0.85rem, 2.5vw, 0.95rem)", margin: 0 }}>
+              Track your orders and delivery status
+            </p>
+          </Link>
+
           {/* Shop Products */}
           <Link
             href="/products"
