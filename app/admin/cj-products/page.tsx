@@ -258,8 +258,8 @@ export default function CJProductImportPage() {
             paddingLeft: "1.5rem",
             lineHeight: "1.8"
           }}>
-            <li><strong>By PID (Product ID):</strong> Paste the PID from CJ → Finds EXACT product</li>
-            <li><strong>By SKU:</strong> Paste the SKU from CJ → Finds EXACT product</li>
+            <li><strong>By SKU:</strong> Paste short SKU (e.g., CJYD3046124) → Finds EXACT product</li>
+            <li><strong>By PID (Product ID):</strong> Paste long PID (e.g., CJYD3046124VM55) → Finds EXACT product</li>
             <li><strong>By Name/Keywords:</strong> Type product name or keywords → Shows related products</li>
           </ul>
           <p style={{ 
@@ -268,7 +268,7 @@ export default function CJProductImportPage() {
             margin: "0.5rem 0 0 0",
             fontStyle: "italic"
           }}>
-            💡 Tip: For exact product match, use PID or SKU (found on CJ product page)
+            💡 Tip: SKUs are shorter (11 chars like CJYD3046124), PIDs are longer (15+ chars)
           </p>
         </div>
         <p style={{ color: "#9ca3af", fontSize: "0.75rem", marginTop: "0.5rem" }}>

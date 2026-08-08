@@ -23,27 +23,34 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isClient, setIsClient] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null | undefined>(undefined);
 
   // Load cart based on current user
   useEffect(() => {
     setIsClient(true);
     
     const loadUserCart = async () => {
+      console.log('🛒 Loading user cart...');
       const { data: { user } } = await supabase.auth.getUser();
       const userId = user?.id || null;
+      
+      console.log('🔐 Current user ID:', userId || 'guest');
       setCurrentUserId(userId);
       
       // Use user-specific cart key
       const cartKey = userId ? `marketnest_cart_${userId}` : "marketnest_cart_guest";
+      console.log('🔑 Using cart key:', cartKey);
+      
       const savedCart = localStorage.getItem(cartKey);
       
       if (savedCart) {
         try {
           const parsedCart = JSON.parse(savedCart);
           if (Array.isArray(parsedCart)) {
+            console.log('✅ Loaded cart:', parsedCart.length, 'items');
             setCart(parsedCart);
           } else {
+            console.log('⚠️ Invalid cart data, clearing');
             setCart([]);
             localStorage.removeItem(cartKey);
           }
@@ -53,6 +60,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           localStorage.removeItem(cartKey);
         }
       } else {
+        console.log('📭 No saved cart found, starting empty');
         setCart([]);
       }
     };
@@ -60,31 +68,51 @@ export function CartProvider({ children }: { children: ReactNode }) {
     loadUserCart();
     
     // Listen for auth changes (login/logout)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔄 Auth state changed:', event);
       const newUserId = session?.user?.id || null;
+      console.log('👤 New user ID:', newUserId || 'guest');
       
       if (event === 'SIGNED_OUT') {
         // Clear cart on logout
+        console.log('🚪 User logged out, clearing cart');
         setCart([]);
         setCurrentUserId(null);
-      } else if (newUserId !== currentUserId) {
-        // User changed, load their cart
+        // Also clear from localStorage
+        if (typeof window !== 'undefined') {
+          const keys = Object.keys(localStorage);
+          keys.forEach(key => {
+            if (key.startsWith('marketnest_cart_')) {
+              console.log('🗑️ Clearing cart key:', key);
+              localStorage.removeItem(key);
+            }
+          });
+        }
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        // User logged in or session updated, load their cart
+        console.log('🔓 User session active, loading cart for:', newUserId);
         setCurrentUserId(newUserId);
         const cartKey = newUserId ? `marketnest_cart_${newUserId}` : "marketnest_cart_guest";
+        console.log('🔑 Loading cart with key:', cartKey);
+        
         const savedCart = localStorage.getItem(cartKey);
         
         if (savedCart) {
           try {
             const parsedCart = JSON.parse(savedCart);
             if (Array.isArray(parsedCart)) {
+              console.log('✅ Loaded cart for user:', parsedCart.length, 'items');
               setCart(parsedCart);
             } else {
+              console.log('⚠️ Invalid cart data for user, clearing');
               setCart([]);
             }
           } catch (e) {
+            console.error('❌ Cart parse error:', e);
             setCart([]);
           }
         } else {
+          console.log('📭 No saved cart for this user, starting empty');
           setCart([]);
         }
       }
@@ -99,6 +127,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isClient && currentUserId !== undefined) {
       const cartKey = currentUserId ? `marketnest_cart_${currentUserId}` : "marketnest_cart_guest";
+      console.log('💾 Saving cart to:', cartKey, '|', cart.length, 'items');
       localStorage.setItem(cartKey, JSON.stringify(cart));
     }
   }, [cart, isClient, currentUserId]);

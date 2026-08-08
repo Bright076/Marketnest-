@@ -294,25 +294,13 @@ export default function NotificationsPage() {
             {filteredNotifications.map((notification) => (
               <div
                 key={notification.id}
-                onClick={() => !notification.is_read && markAsRead(notification.id)}
                 style={{
                   background: notification.is_read ? "#ffffff" : "#f0fdf4",
                   padding: "1.5rem",
                   borderRadius: "16px",
                   border: `2px solid ${notification.is_read ? "#e5e7eb" : "#bbf7d0"}`,
-                  cursor: notification.is_read ? "default" : "pointer",
                   transition: "all 0.2s",
                   boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)"
-                }}
-                onMouseEnter={(e) => {
-                  if (!notification.is_read) {
-                    e.currentTarget.style.background = "#dcfce7";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!notification.is_read) {
-                    e.currentTarget.style.background = "#f0fdf4";
-                  }
                 }}
               >
                 <div style={{ display: "flex", gap: "1.25rem" }}>
@@ -341,25 +329,48 @@ export default function NotificationsPage() {
                           }} />
                         )}
                       </h3>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteNotification(notification.id);
-                        }}
-                        style={{
-                          padding: "0.375rem 0.75rem",
-                          background: "#fee2e2",
-                          color: "#ef4444",
-                          border: "1px solid #fecaca",
-                          borderRadius: "6px",
-                          fontSize: "0.8rem",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          flexShrink: 0
-                        }}
-                      >
-                        Delete
-                      </button>
+                      <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
+                        {!notification.is_read && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markAsRead(notification.id);
+                            }}
+                            style={{
+                              padding: "0.375rem 0.75rem",
+                              background: "#dcfce7",
+                              color: "#16a34a",
+                              border: "1px solid #bbf7d0",
+                              borderRadius: "6px",
+                              fontSize: "0.8rem",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              whiteSpace: "nowrap"
+                            }}
+                          >
+                            Mark Read
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteNotification(notification.id);
+                          }}
+                          style={{
+                            padding: "0.375rem 0.75rem",
+                            background: "#fee2e2",
+                            color: "#ef4444",
+                            border: "1px solid #fecaca",
+                            borderRadius: "6px",
+                            fontSize: "0.8rem",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            whiteSpace: "nowrap"
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                     <p style={{
                       margin: "0 0 0.75rem 0",
