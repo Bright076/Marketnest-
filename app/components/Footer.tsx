@@ -63,7 +63,7 @@ export default function Footer() {
               rel="noopener noreferrer"
               style={{ color: "#16a34a", textDecoration: "none", transition: "opacity 0.2s" }}
             >
-              💬 WhatsApp: 08132437076
+              💬 WhatsApp Us
             </a>
             <a
               href="mailto:brightchidubem87@gmail.com"
