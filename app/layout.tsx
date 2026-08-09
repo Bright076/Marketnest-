@@ -39,15 +39,12 @@ export default function RootLayout({
           display: "flex",
           flexDirection: "column",
           margin: 0,
-          overflow: "hidden",
-          overflowY: "auto",
           width: "100%",
-          maxWidth: "100vw",
         }}
       >
         <Providers>
           <Navbar />
-          <main style={{ flexGrow: 1, width: "100%", overflow: "hidden" }}>{children}</main>
+          <main style={{ flexGrow: 1, width: "100%" }}>{children}</main>
           <Footer />
         </Providers>
       </body>
