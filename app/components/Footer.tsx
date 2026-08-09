@@ -65,7 +65,12 @@ export default function Footer() {
             >
               💬 WhatsApp: 08132437076
             </a>
-            <span>📧 brightchidubem87@gmail.com</span>
+            <a
+              href="mailto:brightchidubem87@gmail.com"
+              style={{ color: "#9ca3af", textDecoration: "none", transition: "color 0.2s" }}
+            >
+              📧 brightchidubem87@gmail.com
+            </a>
           </div>
         </div>
       </div>

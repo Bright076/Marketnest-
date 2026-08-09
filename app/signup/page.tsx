@@ -16,11 +16,56 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+
+  // Password validation function
+  const validatePassword = (pwd: string) => {
+    const minLength = 8;
+    const hasUpperCase = /[A-Z]/.test(pwd);
+    const hasLowerCase = /[a-z]/.test(pwd);
+    const hasNumber = /[0-9]/.test(pwd);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(pwd);
+
+    if (pwd.length < minLength) {
+      return "Password must be at least 8 characters long";
+    }
+    if (!hasUpperCase || !hasLowerCase) {
+      return "Password must contain both uppercase and lowercase letters";
+    }
+    if (!hasNumber) {
+      return "Password must contain at least one number";
+    }
+    if (!hasSpecialChar) {
+      return "Password must contain at least one special character (!@#$%^&*...)";
+    }
+    return "";
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPassword = e.target.value;
+    setPassword(newPassword);
+    
+    // Validate password as user types
+    if (newPassword.length > 0) {
+      const error = validatePassword(newPassword);
+      setPasswordError(error);
+    } else {
+      setPasswordError("");
+    }
+  };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+
+    // Final password validation before submission
+    const pwdError = validatePassword(password);
+    if (pwdError) {
+      setError(pwdError);
+      setLoading(false);
+      return;
+    }
 
     try {
       // Create auth account with metadata
@@ -277,27 +322,31 @@ export default function SignupPage() {
                 id="password"
                 type={showPassword ? "text" : "password"}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={handlePasswordChange}
                 required
-                minLength={6}
-                placeholder="At least 6 characters"
+                minLength={8}
+                placeholder="Min 8 characters, letters, numbers & special char"
                 style={{
                   width: "100%",
                   padding: "0.875rem 1rem",
                   paddingRight: "3rem",
-                  border: "2px solid #e5e7eb",
+                  border: `2px solid ${passwordError ? "#ef4444" : "#e5e7eb"}`,
                   borderRadius: "12px",
                   fontSize: "0.95rem",
                   outline: "none",
                   transition: "all 0.2s",
                 }}
                 onFocus={(e) => {
-                  e.target.style.borderColor = "#16a34a";
-                  e.target.style.boxShadow = "0 0 0 3px rgba(22, 163, 74, 0.1)";
+                  if (!passwordError) {
+                    e.target.style.borderColor = "#16a34a";
+                    e.target.style.boxShadow = "0 0 0 3px rgba(22, 163, 74, 0.1)";
+                  }
                 }}
                 onBlur={(e) => {
-                  e.target.style.borderColor = "#e5e7eb";
-                  e.target.style.boxShadow = "none";
+                  if (!passwordError) {
+                    e.target.style.borderColor = "#e5e7eb";
+                    e.target.style.boxShadow = "none";
+                  }
                 }}
               />
               <button
@@ -318,6 +367,66 @@ export default function SignupPage() {
                 {showPassword ? "👁️" : "👁️‍🗨️"}
               </button>
             </div>
+            
+            {/* Password Requirements */}
+            <div style={{ marginTop: "0.75rem", fontSize: "0.8rem" }}>
+              <div style={{ color: "#6b7280", marginBottom: "0.5rem", fontWeight: 600 }}>
+                Password must contain:
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                <div style={{ 
+                  color: password.length >= 8 ? "#16a34a" : "#9ca3af",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem"
+                }}>
+                  <span>{password.length >= 8 ? "✓" : "○"}</span>
+                  <span>At least 8 characters</span>
+                </div>
+                <div style={{ 
+                  color: /[A-Z]/.test(password) && /[a-z]/.test(password) ? "#16a34a" : "#9ca3af",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem"
+                }}>
+                  <span>{/[A-Z]/.test(password) && /[a-z]/.test(password) ? "✓" : "○"}</span>
+                  <span>Uppercase & lowercase letters</span>
+                </div>
+                <div style={{ 
+                  color: /[0-9]/.test(password) ? "#16a34a" : "#9ca3af",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem"
+                }}>
+                  <span>{/[0-9]/.test(password) ? "✓" : "○"}</span>
+                  <span>At least one number</span>
+                </div>
+                <div style={{ 
+                  color: /[!@#$%^&*(),.?":{}|<>]/.test(password) ? "#16a34a" : "#9ca3af",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem"
+                }}>
+                  <span>{/[!@#$%^&*(),.?":{}|<>]/.test(password) ? "✓" : "○"}</span>
+                  <span>At least one special character (!@#$%...)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Password Error */}
+            {passwordError && (
+              <div style={{
+                marginTop: "0.75rem",
+                padding: "0.75rem",
+                background: "#fef2f2",
+                border: "1px solid #fecaca",
+                borderRadius: "8px",
+                color: "#dc2626",
+                fontSize: "0.85rem"
+              }}>
+                {passwordError}
+              </div>
+            )}
           </div>
 
           {/* Signup Button */}
