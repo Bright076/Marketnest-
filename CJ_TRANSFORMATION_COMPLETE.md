@@ -333,9 +333,9 @@ npm run dev
 
 ### Environment Variables Required:
 ```env
-CJ_API_KEY=your_cj_api_key
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+CJ_API_KEY=YOUR_CJ_API_KEY
+NEXT_PUBLIC_SUPABASE_URL=YOUR_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
 ```
 
 ---

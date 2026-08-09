@@ -62,7 +62,7 @@ Admin test page:
 Your `.env.local` file already contains:
 
 ```env
-CJ_API_KEY=CJ5366105@api@465930408b5e4ce6a5802e538fbf01a7
+CJ_API_KEY=YOUR_CJ_API_KEY_HERE
 ```
 
 **Security Notes:**

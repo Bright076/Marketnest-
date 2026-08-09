@@ -24,9 +24,11 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholde
 
 Make sure these are set in Vercel:
 
-1. `NEXT_PUBLIC_SUPABASE_URL` = `https://yuhevckzxzzkazxickir.supabase.co`
-2. `NEXT_PUBLIC_SUPABASE_ANON_KEY` = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl1aGV2Y2t6eHp6a2F6eGlja2lyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNTg5MTQsImV4cCI6MjA5MzkzNDkxNH0.JWl75g7v8JFJyyZ2LPRyWpvTVDLmC8FP_Das9pr0e40`
-3. `CJ_API_KEY` = `CJ5366105@api@465930408b5e4ce6a5802e538fbf01a7`
+1. `NEXT_PUBLIC_SUPABASE_URL` = `YOUR_SUPABASE_URL`
+2. `NEXT_PUBLIC_SUPABASE_ANON_KEY` = `YOUR_SUPABASE_ANON_KEY`
+3. `CJ_API_KEY` = `YOUR_CJ_API_KEY`
+
+**Find these in your Supabase dashboard → Settings → API**
 
 ## 🚀 Deployment Status
 

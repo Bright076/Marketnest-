@@ -5,9 +5,13 @@
 ### 1. **Environment Variables Fixed** ✅
 Updated `.env.local` with correct variable names:
 ```env
-TELEGRAM_BOT_TOKEN=8894934384:AAHf1D4cNtycT9iJwiXOQP1vZIi7fkfIIf4
-TELEGRAM_CHAT_ID=8325905031
+TELEGRAM_BOT_TOKEN=YOUR_BOT_TOKEN_HERE
+TELEGRAM_CHAT_ID=YOUR_CHAT_ID_HERE
 ```
+
+**Get your credentials:**
+- Bot token: Message @BotFather on Telegram → `/mybots` → Select bot → API Token
+- Chat ID: Message @userinfobot on Telegram
 
 ### 2. **Checkout Page Updated** ✅
 Added Telegram notification call in `app/checkout/page.tsx` after order creation:

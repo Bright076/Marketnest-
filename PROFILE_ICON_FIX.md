@@ -120,8 +120,8 @@ console.log(data.session?.user);
 **3. Check Environment Variables**
 ```
 Make sure .env.local has:
-- NEXT_PUBLIC_SUPABASE_URL=https://yuhevckzxzzkazxickir.supabase.co
-- NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+- NEXT_PUBLIC_SUPABASE_URL=YOUR_SUPABASE_URL
+- NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
 ```
 
 **4. Restart Dev Server**

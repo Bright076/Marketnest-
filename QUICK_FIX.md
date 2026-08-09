@@ -20,7 +20,7 @@ Your current key looks wrong. It should be a long JWT token.
 3. Open: `marketnest/.env.local`
 4. Replace the line:
    ```
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.YOUR_ACTUAL_KEY_HERE
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
    ```
 5. Save the file
 6. Restart your dev server

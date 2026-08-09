@@ -33,7 +33,7 @@ CJ API does NOT use email for authentication. It requires an **API Key** that yo
 Update your `.env.local` file:
 
 ```env
-CJ_API_KEY=CJ5366105@api@465930408b5e4ce6a5802e538fbf01a7
+CJ_API_KEY=YOUR_CJ_API_KEY_HERE
 ```
 
 Replace with YOUR actual API Key from Step 3.

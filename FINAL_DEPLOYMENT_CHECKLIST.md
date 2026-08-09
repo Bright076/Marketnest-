@@ -99,7 +99,7 @@ CJ5366105@api@465930408b5e4ce6a5802e538fbf01a7
 
 ### "HTTP 400 or 401 from CJ API"
 - **Check:** Did you update the CJ_API_KEY environment variable in Vercel?
-- **Check:** Is it the correct format? `CJ5366105@api@465930408b5e4ce6a5802e538fbf01a7`
+- **Check:** Is it the correct format? `CJ{userId}@api@{token}`
 - **Solution:** Update env var, wait for auto-redeploy
 
 ### "Product search returns no results"

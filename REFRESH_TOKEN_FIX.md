@@ -124,8 +124,8 @@ window.location.reload();
 ### Check Environment Variables
 Make sure `.env.local` has correct values:
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://yuhevckzxzzkazxickir.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+NEXT_PUBLIC_SUPABASE_URL=YOUR_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
 ```
 
 ### Restart Dev Server

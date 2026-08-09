@@ -28,9 +28,13 @@ Go to: **Vercel Dashboard → Your Project → Settings → Environment Variable
 
 Add these two variables:
 ```
-TELEGRAM_BOT_TOKEN = 8894934384:AAHf1D4cNtycT9iJwiXOQP1vZIi7fkfIIf4
-TELEGRAM_CHAT_ID = 8325905031
+TELEGRAM_BOT_TOKEN = YOUR_BOT_TOKEN_HERE
+TELEGRAM_CHAT_ID = YOUR_CHAT_ID_HERE
 ```
+
+**Get your credentials:**
+- Bot token: Message @BotFather on Telegram → `/mybots` → Select bot → API Token
+- Chat ID: Message @userinfobot on Telegram → It replies with your chat ID
 
 **Important:** 
 - Variable names must be EXACTLY as shown (case-sensitive)
@@ -138,9 +142,9 @@ You'll know it's working when:
 **4. Test Bot Manually**
 Send a test request using curl or Postman:
 ```bash
-curl -X POST "https://api.telegram.org/bot8894934384:AAHf1D4cNtycT9iJwiXOQP1vZIi7fkfIIf4/sendMessage" \
+curl -X POST "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/sendMessage" \
   -H "Content-Type: application/json" \
-  -d '{"chat_id": "8325905031", "text": "Test message"}'
+  -d '{"chat_id": "<YOUR_CHAT_ID>", "text": "Test message"}'
 ```
 
 If this works, the bot is fine. Problem is in the code integration.
