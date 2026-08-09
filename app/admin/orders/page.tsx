@@ -192,146 +192,260 @@ export default function OrdersPage() {
           </p>
         </div>
       ) : (
-        <div style={{
-          background: "#ffffff",
-          borderRadius: "16px",
-          border: "1px solid #e5e7eb",
-          overflow: "hidden"
-        }}>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead style={{ background: "#f9fafb" }}>
-                <tr>
-                  <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", fontWeight: 600, color: "#6b7280", borderBottom: "2px solid #e5e7eb" }}>
-                    Order ID
-                  </th>
-                  <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", fontWeight: 600, color: "#6b7280", borderBottom: "2px solid #e5e7eb" }}>
-                    Customer
-                  </th>
-                  <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", fontWeight: 600, color: "#6b7280", borderBottom: "2px solid #e5e7eb" }}>
-                    Product
-                  </th>
-                  <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", fontWeight: 600, color: "#6b7280", borderBottom: "2px solid #e5e7eb" }}>
-                    Amount
-                  </th>
-                  <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", fontWeight: 600, color: "#6b7280", borderBottom: "2px solid #e5e7eb" }}>
-                    Payment
-                  </th>
-                  <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", fontWeight: 600, color: "#6b7280", borderBottom: "2px solid #e5e7eb" }}>
-                    Order Status
-                  </th>
-                  <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", fontWeight: 600, color: "#6b7280", borderBottom: "2px solid #e5e7eb" }}>
-                    Date
-                  </th>
-                  <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", fontWeight: 600, color: "#6b7280", borderBottom: "2px solid #e5e7eb" }}>
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map((order) => {
-                  const orderStatusColor = getStatusColor(order.order_status);
-                  const paymentStatusColor = getStatusColor(order.payment_status);
-                  
-                  return (
-                    <tr key={order.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
-                      <td style={{ padding: "1rem", fontSize: "0.85rem", color: "#6b7280", fontFamily: "monospace" }}>
-                        {order.id.slice(0, 8)}...
-                      </td>
-                      <td style={{ padding: "1rem" }}>
-                        <div style={{ fontWeight: 600, color: "#111827", marginBottom: "0.25rem" }}>
-                          {order.customer_name}
-                        </div>
-                        <div style={{ fontSize: "0.85rem", color: "#6b7280" }}>
-                          {order.customer_phone}
-                        </div>
-                      </td>
-                      <td style={{ padding: "1rem" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                          {order.products?.image_url && (
-                            <img
-                              src={order.products.image_url}
-                              alt={order.products.title}
-                              style={{ width: "40px", height: "40px", objectFit: "cover", borderRadius: "6px" }}
-                            />
-                          )}
-                          <span style={{ fontSize: "0.9rem", color: "#111827" }}>
-                            {order.products?.title || 'N/A'}
-                          </span>
-                        </div>
-                      </td>
-                      <td style={{ padding: "1rem", fontWeight: 700, color: "#16a34a" }}>
-                        ${Number(order.amount_paid).toFixed(2)}
-                      </td>
-                      <td style={{ padding: "1rem" }}>
-                        <select
-                          value={order.payment_status}
-                          onChange={(e) => updatePaymentStatus(order.id, e.target.value)}
-                          style={{
-                            padding: "0.375rem 0.75rem",
-                            borderRadius: "6px",
-                            border: "1px solid #e5e7eb",
-                            fontSize: "0.85rem",
-                            fontWeight: 600,
-                            background: paymentStatusColor.bg,
-                            color: paymentStatusColor.text,
-                            cursor: "pointer"
-                          }}
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="paid">Paid</option>
-                          <option value="failed">Failed</option>
-                        </select>
-                      </td>
-                      <td style={{ padding: "1rem" }}>
-                        <select
-                          value={order.order_status}
-                          onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                          style={{
-                            padding: "0.375rem 0.75rem",
-                            borderRadius: "6px",
-                            border: "1px solid #e5e7eb",
-                            fontSize: "0.85rem",
-                            fontWeight: 600,
-                            background: orderStatusColor.bg,
-                            color: orderStatusColor.text,
-                            cursor: "pointer"
-                          }}
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="processing">Processing</option>
-                          <option value="shipped">Shipped</option>
-                          <option value="delivered">Delivered</option>
-                          <option value="cancelled">Cancelled</option>
-                        </select>
-                      </td>
-                      <td style={{ padding: "1rem", fontSize: "0.85rem", color: "#6b7280" }}>
-                        {new Date(order.created_at).toLocaleDateString()}
-                      </td>
-                      <td style={{ padding: "1rem" }}>
-                        <Link
-                          href={`/admin/orders/${order.id}`}
-                          style={{
-                            padding: "0.5rem 1rem",
-                            background: "#f0fdf4",
-                            color: "#16a34a",
-                            borderRadius: "6px",
-                            fontSize: "0.85rem",
-                            fontWeight: 600,
-                            textDecoration: "none",
-                            display: "inline-block"
-                          }}
-                        >
-                          View
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+        <>
+          {/* Desktop Table View */}
+          <div className="desktop-only" style={{
+            background: "#ffffff",
+            borderRadius: "16px",
+            border: "1px solid #e5e7eb",
+            overflow: "hidden"
+          }}>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "900px" }}>
+                <thead style={{ background: "#f9fafb" }}>
+                  <tr>
+                    <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", fontWeight: 600, color: "#6b7280", borderBottom: "2px solid #e5e7eb" }}>Customer</th>
+                    <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", fontWeight: 600, color: "#6b7280", borderBottom: "2px solid #e5e7eb" }}>Product</th>
+                    <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", fontWeight: 600, color: "#6b7280", borderBottom: "2px solid #e5e7eb" }}>Amount</th>
+                    <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", fontWeight: 600, color: "#6b7280", borderBottom: "2px solid #e5e7eb" }}>Payment</th>
+                    <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", fontWeight: 600, color: "#6b7280", borderBottom: "2px solid #e5e7eb" }}>Status</th>
+                    <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", fontWeight: 600, color: "#6b7280", borderBottom: "2px solid #e5e7eb" }}>Date</th>
+                    <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", fontWeight: 600, color: "#6b7280", borderBottom: "2px solid #e5e7eb" }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map((order) => {
+                    const orderStatusColor = getStatusColor(order.order_status);
+                    const paymentStatusColor = getStatusColor(order.payment_status);
+                    
+                    return (
+                      <tr key={order.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                        <td style={{ padding: "1rem" }}>
+                          <div style={{ fontWeight: 600, color: "#111827", marginBottom: "0.25rem" }}>
+                            {order.customer_name}
+                          </div>
+                          <div style={{ fontSize: "0.85rem", color: "#6b7280" }}>
+                            {order.customer_phone}
+                          </div>
+                        </td>
+                        <td style={{ padding: "1rem" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                            {order.products?.image_url && (
+                              <img
+                                src={order.products.image_url}
+                                alt={order.products.title}
+                                style={{ width: "40px", height: "40px", objectFit: "cover", borderRadius: "6px" }}
+                              />
+                            )}
+                            <span style={{ fontSize: "0.9rem", color: "#111827" }}>
+                              {order.products?.title || 'N/A'}
+                            </span>
+                          </div>
+                        </td>
+                        <td style={{ padding: "1rem", fontWeight: 700, color: "#16a34a" }}>
+                          ${Number(order.amount_paid).toFixed(2)}
+                        </td>
+                        <td style={{ padding: "1rem" }}>
+                          <select
+                            value={order.payment_status}
+                            onChange={(e) => updatePaymentStatus(order.id, e.target.value)}
+                            style={{
+                              padding: "0.375rem 0.75rem",
+                              borderRadius: "6px",
+                              border: "1px solid #e5e7eb",
+                              fontSize: "0.85rem",
+                              fontWeight: 600,
+                              background: paymentStatusColor.bg,
+                              color: paymentStatusColor.text,
+                              cursor: "pointer"
+                            }}
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="paid">Paid</option>
+                            <option value="failed">Failed</option>
+                          </select>
+                        </td>
+                        <td style={{ padding: "1rem" }}>
+                          <select
+                            value={order.order_status}
+                            onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                            style={{
+                              padding: "0.375rem 0.75rem",
+                              borderRadius: "6px",
+                              border: "1px solid #e5e7eb",
+                              fontSize: "0.85rem",
+                              fontWeight: 600,
+                              background: orderStatusColor.bg,
+                              color: orderStatusColor.text,
+                              cursor: "pointer"
+                            }}
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="processing">Processing</option>
+                            <option value="shipped">Shipped</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="cancelled">Cancelled</option>
+                          </select>
+                        </td>
+                        <td style={{ padding: "1rem", fontSize: "0.85rem", color: "#6b7280" }}>
+                          {new Date(order.created_at).toLocaleDateString()}
+                        </td>
+                        <td style={{ padding: "1rem" }}>
+                          <Link
+                            href={`/admin/orders/${order.id}`}
+                            style={{
+                              padding: "0.5rem 1rem",
+                              background: "#f0fdf4",
+                              color: "#16a34a",
+                              borderRadius: "6px",
+                              fontSize: "0.85rem",
+                              fontWeight: 600,
+                              textDecoration: "none",
+                              display: "inline-block"
+                            }}
+                          >
+                            View
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+
+          {/* Mobile Card View */}
+          <div className="mobile-only" style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem'
+          }}>
+            {orders.map((order) => {
+              const orderStatusColor = getStatusColor(order.order_status);
+              const paymentStatusColor = getStatusColor(order.payment_status);
+              
+              return (
+                <div key={order.id} style={{
+                  background: "#ffffff",
+                  borderRadius: "12px",
+                  border: "1px solid #e5e7eb",
+                  padding: "1rem",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.05)"
+                }}>
+                  {/* Product */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem", paddingBottom: "1rem", borderBottom: "1px solid #f3f4f6" }}>
+                    {order.products?.image_url && (
+                      <img
+                        src={order.products.image_url}
+                        alt={order.products.title}
+                        style={{ width: "60px", height: "60px", objectFit: "cover", borderRadius: "8px", flexShrink: 0 }}
+                      />
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, color: "#111827", marginBottom: "0.25rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {order.products?.title || 'N/A'}
+                      </div>
+                      <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#16a34a" }}>
+                        ${Number(order.amount_paid).toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Customer */}
+                  <div style={{ marginBottom: "1rem" }}>
+                    <div style={{ fontSize: "0.75rem", color: "#6b7280", marginBottom: "0.25rem", fontWeight: 600, textTransform: "uppercase" }}>Customer</div>
+                    <div style={{ fontWeight: 600, color: "#111827" }}>{order.customer_name}</div>
+                    <div style={{ fontSize: "0.85rem", color: "#6b7280" }}>{order.customer_phone}</div>
+                  </div>
+
+                  {/* Status Dropdowns */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "1rem" }}>
+                    <div>
+                      <div style={{ fontSize: "0.75rem", color: "#6b7280", marginBottom: "0.25rem", fontWeight: 600 }}>Payment</div>
+                      <select
+                        value={order.payment_status}
+                        onChange={(e) => updatePaymentStatus(order.id, e.target.value)}
+                        style={{
+                          width: "100%",
+                          padding: "0.5rem",
+                          borderRadius: "6px",
+                          border: "1px solid #e5e7eb",
+                          fontSize: "0.85rem",
+                          fontWeight: 600,
+                          background: paymentStatusColor.bg,
+                          color: paymentStatusColor.text,
+                          cursor: "pointer"
+                        }}
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="paid">Paid</option>
+                        <option value="failed">Failed</option>
+                      </select>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "0.75rem", color: "#6b7280", marginBottom: "0.25rem", fontWeight: 600 }}>Order</div>
+                      <select
+                        value={order.order_status}
+                        onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                        style={{
+                          width: "100%",
+                          padding: "0.5rem",
+                          borderRadius: "6px",
+                          border: "1px solid #e5e7eb",
+                          fontSize: "0.85rem",
+                          fontWeight: 600,
+                          background: orderStatusColor.bg,
+                          color: orderStatusColor.text,
+                          cursor: "pointer"
+                        }}
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="processing">Processing</option>
+                        <option value="shipped">Shipped</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Date & Action */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ fontSize: "0.85rem", color: "#6b7280" }}>
+                      {new Date(order.created_at).toLocaleDateString()}
+                    </div>
+                    <Link
+                      href={`/admin/orders/${order.id}`}
+                      style={{
+                        padding: "0.5rem 1rem",
+                        background: "linear-gradient(135deg, #16a34a 0%, #059669 100%)",
+                        color: "#ffffff",
+                        borderRadius: "6px",
+                        fontSize: "0.9rem",
+                        fontWeight: 600,
+                        textDecoration: "none",
+                        display: "inline-block"
+                      }}
+                    >
+                      View Details
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <style jsx>{`
+            @media (max-width: 767px) {
+              .desktop-only { display: none !important; }
+              .mobile-only { display: flex !important; }
+            }
+            @media (min-width: 768px) {
+              .desktop-only { display: block !important; }
+              .mobile-only { display: none !important; }
+            }
+          `}</style>
+        </>
       )}
     </div>
   );

@@ -58,14 +58,14 @@ export default function Footer() {
           </h4>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem", fontSize: "0.875rem" }}>
             <a
-              href="https://wa.me/234XXXXXXXXXX?text=Hello%20I%20have%20a%20question"
+              href="https://wa.me/2348132437076?text=Hello%20I%20have%20a%20question"
               target="_blank"
               rel="noopener noreferrer"
               style={{ color: "#16a34a", textDecoration: "none", transition: "opacity 0.2s" }}
             >
-              💬 WhatsApp Us
+              💬 WhatsApp: 08132437076
             </a>
-            <span>📧 support@marketnest.com</span>
+            <span>📧 brightchidubem87@gmail.com</span>
           </div>
         </div>
       </div>
