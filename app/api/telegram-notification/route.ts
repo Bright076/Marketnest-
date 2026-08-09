@@ -18,38 +18,40 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Build message text
-    const message = `
-🎉 *NEW ORDER RECEIVED!*
+    // Build simple plain text message (no special formatting)
+    const message = `🎉 NEW ORDER RECEIVED!
 
-👤 *Customer Details:*
+Customer Details:
 Name: ${customerInfo.name}
 Email: ${customerInfo.email}
 Phone: ${customerInfo.phone}
 
-📦 *Order Summary:*
-Total Amount: *$${totalAmount.toFixed(2)} ${currency}*
+Order Summary:
+Total Amount: $${totalAmount.toFixed(2)} ${currency}
 Number of Items: ${orders.length}
 
-🚚 *Delivery Address:*
+Delivery Address:
 ${deliveryInfo.address}
 ${deliveryInfo.city}, ${deliveryInfo.state}
 ${deliveryInfo.country}
 ${deliveryInfo.postalCode ? `Postal Code: ${deliveryInfo.postalCode}` : ''}
 
-${deliveryInfo.notes ? `📝 *Order Notes:*\n${deliveryInfo.notes}\n` : ''}
----
-💻 View in admin dashboard:
+${deliveryInfo.notes ? `Order Notes: ${deliveryInfo.notes}` : ''}
+
+View in admin dashboard:
 https://marketnest-shop-one.vercel.app/admin/orders
 
-⏰ ${new Date().toLocaleString('en-US', { 
+Time: ${new Date().toLocaleString('en-US', { 
   dateStyle: 'full', 
   timeStyle: 'short',
   timeZone: 'Africa/Lagos'
-})}
-    `.trim();
+})}`;
 
-    // Send to Telegram
+    console.log('📤 Sending to Telegram...');
+    console.log('Chat ID:', TELEGRAM_CHAT_ID);
+    console.log('Message length:', message.length);
+
+    // Send to Telegram (plain text, no formatting)
     const telegramResponse = await fetch(
       `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
       {
@@ -60,12 +62,13 @@ https://marketnest-shop-one.vercel.app/admin/orders
         body: JSON.stringify({
           chat_id: TELEGRAM_CHAT_ID,
           text: message,
-          parse_mode: 'Markdown',
         }),
       }
     );
 
     const telegramResult = await telegramResponse.json();
+
+    console.log('📥 Telegram API response:', JSON.stringify(telegramResult, null, 2));
 
     if (!telegramResult.ok) {
       console.error('❌ Telegram API error:', telegramResult);
@@ -73,10 +76,12 @@ https://marketnest-shop-one.vercel.app/admin/orders
     }
 
     console.log('✅ Telegram notification sent successfully!');
+    console.log('Message ID:', telegramResult.result?.message_id);
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Telegram notification sent' 
+      message: 'Telegram notification sent',
+      messageId: telegramResult.result?.message_id 
     });
 
   } catch (error: any) {
