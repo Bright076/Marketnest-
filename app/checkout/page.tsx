@@ -83,9 +83,8 @@ export default function CheckoutPage() {
         throw new Error("User not authenticated");
       }
 
-      // Calculate total in USD (no conversion)
+      // Calculate total in USD
       const totalUSD = cartTotal;
-      const totalAmount = totalUSD;
 
       // Create orders for each product in cart
       const orderPromises = cart.map(async (item) => {
@@ -112,7 +111,7 @@ export default function CheckoutPage() {
               order_notes: formData.order_notes || null,
               amount_paid: itemTotal,
               currency: "USD",
-              payment_method: "pending", // Testing mode - no payment required yet
+              payment_method: "vendo_flutterwave",
               payment_status: 'pending',
               order_status: 'pending'
             }
@@ -141,58 +140,49 @@ export default function CheckoutPage() {
       });
 
       const orders = await Promise.all(orderPromises);
+      const orderIds = orders.map(o => o.id);
 
-      // Prepare notification payload
-      const notificationPayload = {
-        orders: orders,
-        customerInfo: {
-          name: formData.customer_name,
-          email: formData.customer_email,
-          phone: formData.customer_phone
-        },
-        deliveryInfo: {
-          country: formData.customer_country,
-          state: formData.customer_state,
-          city: formData.customer_city,
-          address: formData.customer_address,
-          postalCode: formData.customer_postal_code,
-          notes: formData.order_notes
-        },
-        paymentMethod: "Testing Mode",
-        totalAmount: totalAmount,
-        currency: "USD"
-      };
+      console.log('✅ Orders created:', orderIds);
 
-      // Send admin notification email for all orders
-      try {
-        await fetch('/api/admin/order-notification', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(notificationPayload)
-        });
-      } catch (emailError) {
-        console.error('Failed to send admin notification:', emailError);
-        // Don't fail the order if email fails
+      // Create payment with Vendo
+      console.log('💳 Creating payment with Vendo...');
+      
+      const paymentResponse = await fetch('/api/payment/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderIds: orderIds,
+          customerInfo: {
+            name: formData.customer_name,
+            email: formData.customer_email,
+            phone: formData.customer_phone
+          },
+          deliveryInfo: {
+            country: formData.customer_country,
+            state: formData.customer_state,
+            city: formData.customer_city,
+            address: formData.customer_address,
+            postalCode: formData.customer_postal_code,
+            notes: formData.order_notes
+          },
+          totalAmountUSD: totalUSD
+        })
+      });
+
+      const paymentResult = await paymentResponse.json();
+
+      if (!paymentResult.success) {
+        throw new Error(paymentResult.error || 'Failed to create payment');
       }
 
-      // Send Telegram notification to admin
-      try {
-        await fetch('/api/telegram-notification', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(notificationPayload)
-        });
-        console.log('✅ Telegram notification sent');
-      } catch (telegramError) {
-        console.error('Failed to send Telegram notification:', telegramError);
-        // Don't fail the order if Telegram fails
-      }
+      console.log('✅ Payment created:', paymentResult.partnerReference);
 
-      // Clear cart
+      // Clear cart before redirect
       clearCart();
 
-      // Redirect to success page
-      router.push('/orders/success');
+      // Redirect to Vendo payment page
+      window.location.href = paymentResult.paymentLink;
+
     } catch (error: any) {
       console.error('Error creating order:', error);
       alert('Failed to create order: ' + error.message);
@@ -535,32 +525,32 @@ export default function CheckoutPage() {
                 />
               </div>
 
-              {/* Testing Mode Notice */}
+              {/* Payment Notice */}
               <div style={{
                 marginBottom: "2rem",
                 padding: "1.5rem",
-                background: "#fef3c7",
+                background: "#f0fdf4",
                 borderRadius: "12px",
-                border: "2px solid #fde047"
+                border: "2px solid #bbf7d0"
               }}>
                 <h3 style={{ 
                   fontSize: "1rem", 
                   fontWeight: 700, 
-                  color: "#92400e",
+                  color: "#166534",
                   marginBottom: "0.75rem",
                   display: "flex",
                   alignItems: "center",
                   gap: "0.5rem"
                 }}>
-                  🧪 Testing Mode
+                  💳 Secure Payment
                 </h3>
                 <p style={{ 
                   fontSize: "0.9rem", 
-                  color: "#92400e",
+                  color: "#166534",
                   margin: 0,
                   lineHeight: 1.6
                 }}>
-                  Payment is disabled for testing. This order will test delivery details collection and admin email notifications only.
+                  You'll be redirected to our secure payment partner to complete your purchase. Your order will be confirmed once payment is successful.
                 </p>
               </div>
 
@@ -581,7 +571,7 @@ export default function CheckoutPage() {
                   boxShadow: submitting ? "none" : "0 4px 12px rgba(22, 163, 74, 0.3)"
                 }}
               >
-                {submitting ? "Processing..." : `Place Test Order - $${displayTotal.toFixed(2)} USD`}
+                {submitting ? "Processing..." : `Proceed to Payment - $${displayTotal.toFixed(2)} USD`}
               </button>
             </form>
           </div>
@@ -658,16 +648,16 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Testing Mode Info */}
+            {/* Payment Info */}
             <div style={{
               marginTop: "1.5rem",
               padding: "1rem",
-              background: "#fef3c7",
+              background: "#f0fdf4",
               borderRadius: "8px",
-              border: "1px solid #fde047"
+              border: "1px solid #bbf7d0"
             }}>
-              <p style={{ fontSize: "0.85rem", color: "#92400e", margin: 0 }}>
-                🧪 <strong>Testing Mode:</strong> Payment is disabled. This tests delivery details and email notifications only.
+              <p style={{ fontSize: "0.85rem", color: "#166534", margin: 0 }}>
+                💳 <strong>Secure Payment:</strong> You'll complete payment on the next page via Flutterwave.
               </p>
             </div>
           </div>
