@@ -4,11 +4,21 @@ import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
-  // Top-level error handling to catch any initialization errors
+  // Wrap everything in try-catch to ensure we always return JSON
   try {
     console.log('🔍 Payment API called');
     
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (jsonError: any) {
+      console.error('❌ Failed to parse request JSON:', jsonError.message);
+      return NextResponse.json(
+        { success: false, error: 'Invalid request body' },
+        { status: 400 }
+      );
+    }
+    
     const { orderIds, customerInfo, deliveryInfo, totalAmountUSD } = body;
     
     console.log('📦 Request data:', { orderIds, totalAmountUSD });
@@ -132,6 +142,8 @@ export async function POST(request: NextRequest) {
     };
 
     console.log('📤 Calling Vendo API...');
+    console.log('📤 Vendo URL:', `${VENDO_BASE_URL}/api/partner/payments/create`);
+    console.log('📤 Has API Key:', !!VENDO_PARTNER_API_KEY);
 
     const vendoResponse = await fetch(`${VENDO_BASE_URL}/api/partner/payments/create`, {
       method: 'POST',
@@ -142,23 +154,95 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(vendoPayload),
     });
 
-    const vendoResult = await vendoResponse.json();
+    // Safely handle Vendo response
+    const contentType = vendoResponse.headers.get('content-type') || '';
+    const vendoResponseText = await vendoResponse.text();
+    
+    console.log('📥 Vendo response status:', vendoResponse.status);
+    console.log('📥 Vendo content-type:', contentType);
+    console.log('📥 Vendo response (first 500 chars):', vendoResponseText.substring(0, 500));
 
-    console.log('📥 Vendo response:', { success: vendoResult.success });
+    // Check if response is OK before parsing
+    if (!vendoResponse.ok) {
+      console.error('❌ Vendo API failed with status:', vendoResponse.status);
+      console.error('❌ Vendo error response:', vendoResponseText);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Payment provider error: ${vendoResponse.status}`,
+          details: vendoResponseText.substring(0, 200)
+        },
+        { status: 500 }
+      );
+    }
 
-    if (!vendoResponse.ok || !vendoResult.success) {
-      console.error('❌ Vendo error:', vendoResult);
-      throw new Error(vendoResult.message || 'Failed to create payment');
+    // Parse JSON safely
+    let vendoResult;
+    try {
+      if (!contentType.includes('application/json')) {
+        console.error('❌ Vendo returned non-JSON response. Content-Type:', contentType);
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Payment provider returned invalid response format',
+            details: `Expected JSON, got ${contentType}`
+          },
+          { status: 500 }
+        );
+      }
+      
+      vendoResult = JSON.parse(vendoResponseText);
+      console.log('📥 Vendo parsed result:', { success: vendoResult.success, hasPaymentLink: !!vendoResult.paymentLink });
+    } catch (parseError: any) {
+      console.error('❌ Failed to parse Vendo JSON:', parseError.message);
+      console.error('❌ Raw response:', vendoResponseText);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Payment provider returned malformed response',
+          details: parseError.message
+        },
+        { status: 500 }
+      );
+    }
+
+    // Validate Vendo result
+    if (!vendoResult.success) {
+      console.error('❌ Vendo returned success=false:', vendoResult);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: vendoResult.message || 'Payment creation failed',
+          details: vendoResult.error || 'Unknown error from payment provider'
+        },
+        { status: 400 }
+      );
     }
 
     const { partnerReference, paymentLink, status } = vendoResult;
 
     if (!partnerReference || !paymentLink) {
-      throw new Error('Invalid Vendo response');
+      console.error('❌ Vendo response missing required fields:', { 
+        hasPartnerReference: !!partnerReference, 
+        hasPaymentLink: !!paymentLink 
+      });
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Payment provider response incomplete',
+          details: 'Missing payment link or reference'
+        },
+        { status: 500 }
+      );
     }
+
+    console.log('✅ Vendo payment created:', { partnerReference, hasPaymentLink: !!paymentLink });
 
     // Update orders using direct REST API
     const updateUrl = `${SUPABASE_URL}/rest/v1/orders?id=in.(${orderIds.join(',')})`;
+    
+    console.log('📝 Updating orders in database...');
+    
     const updateResponse = await fetch(updateUrl, {
       method: 'PATCH',
       headers: {
@@ -177,8 +261,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (!updateResponse.ok) {
-      console.error('❌ Failed to update orders');
-      // Don't fail the payment, just log
+      const updateError = await updateResponse.text();
+      console.error('❌ Failed to update orders:', updateResponse.status, updateError);
+      // Don't fail the payment - customer can still complete it
+      // Admin can manually update order status after payment webhook
+    } else {
+      console.log('✅ Orders updated successfully');
     }
 
     console.log('✅ Payment created!');
@@ -193,15 +281,35 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('❌ Payment error (caught):', error);
-    console.error('❌ Error stack:', error.stack);
+    // Ensure we always return JSON, never HTML
+    console.error('❌ Payment API exception:', error);
+    console.error('❌ Error type:', error.constructor.name);
+    console.error('❌ Error message:', error.message);
+    if (error.stack) {
+      console.error('❌ Error stack:', error.stack);
+    }
+    
+    // Determine appropriate status code
+    let statusCode = 500;
+    let errorMessage = 'Payment processing failed';
+    
+    if (error.message?.includes('JSON')) {
+      errorMessage = 'Invalid request format';
+      statusCode = 400;
+    } else if (error.message?.includes('not configured')) {
+      errorMessage = 'Payment system configuration error';
+      statusCode = 500;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
     return NextResponse.json(
       { 
         success: false, 
-        error: error.message || 'Payment failed',
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        error: errorMessage,
+        timestamp: new Date().toISOString()
       },
-      { status: 500 }
+      { status: statusCode }
     );
   }
 }
