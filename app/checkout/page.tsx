@@ -107,7 +107,7 @@ export default function CheckoutPage() {
               customer_state: formData.customer_state,
               customer_city: formData.customer_city,
               customer_address: formData.customer_address,
-              customer_postal_code: formData.customer_postal_code || null,
+              customer_postal_code: formData.customer_postal_code,
               order_notes: formData.order_notes || null,
               amount_paid: itemTotal,
               currency: "USD",
@@ -479,13 +479,14 @@ export default function CheckoutPage() {
                   color: "#374151",
                   marginBottom: "0.5rem"
                 }}>
-                  Postal/ZIP Code
+                  Postal/ZIP Code *
                 </label>
                 <input
                   type="text"
+                  required
                   value={formData.customer_postal_code}
                   onChange={(e) => setFormData({ ...formData, customer_postal_code: e.target.value })}
-                  placeholder="Optional"
+                  placeholder="e.g., 90210, 10001, SW1A 1AA"
                   style={{
                     width: "100%",
                     padding: "0.75rem 1rem",
