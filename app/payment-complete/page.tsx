@@ -14,6 +14,7 @@ interface Order {
   order_status: string;
   payment_status: string;
   currency: string;
+  merchant_order_id?: string;
   flutterwave_transaction_id?: string;
   paid_at?: string;
   created_at: string;
