@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Force Node.js runtime (not Edge) for better compatibility
+export const runtime = 'nodejs';
+
+// Force Node.js runtime (not Edge) for better compatibility
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
+  // Top-level error handling to catch any initialization errors
   try {
     console.log('🔍 Payment API called');
     
@@ -189,11 +196,13 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('❌ Payment error:', error.message);
+    console.error('❌ Payment error (caught):', error);
+    console.error('❌ Error stack:', error.stack);
     return NextResponse.json(
       { 
         success: false, 
-        error: error.message || 'Payment failed'
+        error: error.message || 'Payment failed',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
       },
       { status: 500 }
     );
