@@ -27,13 +27,14 @@ export interface CJProduct {
   pid: string;
   productNameEn: string;
   productImage: string;
-  sellPrice: number;
-  productWeight: number;
+  sellPrice: number | string;
+  productWeight: number | string;
   productSku: string;
   categoryName: string;
   description?: string;
   productImages?: string[];
   variants?: any[];
+  isFreeShipping?: boolean;
 }
 
 export interface CJProductListResponse {
@@ -213,6 +214,130 @@ export async function getCJProductDetails(pid: string): Promise<CJApiResponse<CJ
       pid,
     },
   });
+}
+
+/**
+ * Calculate US shipping fee for a product
+ * Uses CJ's freight calculation API
+ */
+export async function calculateUSShippingFee(pid: string, quantity: number = 1): Promise<number> {
+  try {
+    console.log(`Calculating US shipping for PID: ${pid}, Quantity: ${quantity}`);
+    
+    const authResponse = await authenticateCJ();
+    const accessToken = authResponse.data.accessToken;
+
+    const response = await fetch(`${CJ_API_BASE_URL}/logistic/freightCalculate`, {
+      method: 'POST',
+      headers: {
+        'CJ-Access-Token': accessToken,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        startCountryCode: 'CN', // Most CJ products ship from China
+        endCountryCode: 'US',   // Always calculate for US
+        products: [
+          {
+            pid: pid,
+            quantity: quantity,
+          }
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`CJ Freight Calculate Error ${response.status}:`, errorText);
+      throw new Error(`Failed to calculate shipping: HTTP ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('CJ Freight Calculate Response:', JSON.stringify(result, null, 2));
+
+    if (!result.result) {
+      throw new Error(result.message || 'Shipping calculation failed');
+    }
+
+    // Extract shipping fee from response
+    // CJ may return different formats, handle common cases
+    const shippingFee = result.data?.freightFee || 
+                       result.data?.freight || 
+                       result.data?.shippingFee ||
+                       0;
+
+    console.log(`US Shipping Fee for ${pid}: $${shippingFee}`);
+    return Number(shippingFee);
+  } catch (error: any) {
+    console.error('US Shipping Calculation Error:', error);
+    // Don't fail silently - throw the error so caller can handle it
+    throw new Error(`Failed to calculate US shipping: ${error.message}`);
+  }
+}
+
+/**
+ * Get complete US dropshipping price for a product
+ * Includes product price + US shipping fee
+ */
+export async function getCJProductUSDropshippingPrice(pid: string): Promise<{
+  productPrice: number;
+  usShippingFee: number;
+  usDropshippingPrice: number;
+  productDetails: CJProduct;
+}> {
+  try {
+    console.log(`Getting US dropshipping price for PID: ${pid}`);
+
+    // Get product details
+    const productResponse = await getCJProductDetails(pid);
+    
+    if (!productResponse.result || !productResponse.data) {
+      throw new Error('Failed to fetch product details');
+    }
+
+    const product = productResponse.data;
+    
+    // Parse product price (may be a range like "31.25 -- 37.85")
+    let productPrice = 0;
+    if (typeof product.sellPrice === 'string') {
+      // If it's a range, use the lower price
+      const priceMatch = product.sellPrice.match(/[\d.]+/);
+      productPrice = priceMatch ? parseFloat(priceMatch[0]) : 0;
+    } else {
+      productPrice = Number(product.sellPrice);
+    }
+
+    console.log(`Product Price: $${productPrice}`);
+
+    // Check if product has free shipping
+    const isFreeShipping = product.isFreeShipping === true;
+    let usShippingFee = 0;
+
+    if (!isFreeShipping) {
+      // Calculate US shipping
+      usShippingFee = await calculateUSShippingFee(pid, 1);
+    } else {
+      console.log('Product has FREE SHIPPING to US');
+    }
+
+    const usDropshippingPrice = productPrice + usShippingFee;
+
+    console.log('US Dropshipping Price Breakdown:', {
+      productPrice,
+      usShippingFee,
+      usDropshippingPrice,
+      isFreeShipping,
+    });
+
+    return {
+      productPrice,
+      usShippingFee,
+      usDropshippingPrice,
+      productDetails: product,
+    };
+  } catch (error: any) {
+    console.error('Get US Dropshipping Price Error:', error);
+    throw error;
+  }
 }
 
 /**

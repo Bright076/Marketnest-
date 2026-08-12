@@ -20,7 +20,9 @@ interface ImportFormData {
   title: string;
   description: string;
   image_url: string;
-  supplier_price: number;
+  product_price: number;        // CJ product price only (for display)
+  us_shipping_fee: number;      // US shipping fee (for display)
+  supplier_price: number;        // Total US dropshipping price (used for calculations)
   profit_amount: number;
   selling_price: number;
   category: string;
@@ -47,6 +49,8 @@ export default function CJProductImportPage() {
     title: "",
     description: "",
     image_url: "",
+    product_price: 0,
+    us_shipping_fee: 0,
     supplier_price: 0,
     profit_amount: 0,
     selling_price: 0,
@@ -54,6 +58,7 @@ export default function CJProductImportPage() {
     stock: 100,
     product_sku: "",
   });
+  const [calculatingShipping, setCalculatingShipping] = useState(false);
 
   // Load initial products - show latest products by default
   useEffect(() => {
@@ -161,29 +166,88 @@ export default function CJProductImportPage() {
     }
   };
 
-  const handleImportClick = (product: CJProduct) => {
+  const handleImportClick = async (product: CJProduct) => {
     setSelectedProduct(product);
-    
-    const supplierPrice = typeof product.sellPrice === 'string' 
-      ? parseFloat(product.sellPrice) 
-      : product.sellPrice;
-
-    setImportForm({
-      pid: product.pid,
-      title: product.productNameEn || product.productName || "",
-      description: product.description || "",
-      image_url: product.productImage || "",
-      supplier_price: supplierPrice,
-      profit_amount: 0,
-      selling_price: supplierPrice,
-      category: product.categoryName || "Electronics",
-      stock: product.stock || 100,
-      product_sku: product.productSku || "",
-    });
-    
     setShowImportModal(true);
     setError("");
     setSuccessMessage("");
+    setCalculatingShipping(true);
+
+    try {
+      // Parse product price (handle range like "31.25 -- 37.85")
+      let productPrice = 0;
+      if (typeof product.sellPrice === 'string') {
+        const priceMatch = product.sellPrice.match(/[\d.]+/);
+        productPrice = priceMatch ? parseFloat(priceMatch[0]) : 0;
+      } else {
+        productPrice = product.sellPrice;
+      }
+
+      console.log('🔄 Fetching US dropshipping price for:', product.pid);
+
+      // Fetch US dropshipping price (product + US shipping)
+      const pricingResponse = await fetch('/api/cj/products/us-pricing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pid: product.pid }),
+      });
+
+      const pricingResult = await pricingResponse.json();
+
+      if (!pricingResult.success) {
+        throw new Error(pricingResult.error?.message || 'Failed to calculate US shipping');
+      }
+
+      const { productPrice: fetchedProductPrice, usShippingFee, usDropshippingPrice } = pricingResult.data;
+
+      console.log('✅ US Pricing:', {
+        productPrice: fetchedProductPrice,
+        usShipping: usShippingFee,
+        total: usDropshippingPrice,
+      });
+
+      // Set form with US dropshipping price
+      setImportForm({
+        pid: product.pid,
+        title: product.productNameEn || product.productName || "",
+        description: product.description || "",
+        image_url: product.productImage || "",
+        product_price: fetchedProductPrice,           // Product price only (display)
+        us_shipping_fee: usShippingFee,              // US shipping (display)
+        supplier_price: usDropshippingPrice,          // Total US dropshipping price (MAIN)
+        profit_amount: 0,
+        selling_price: usDropshippingPrice,           // Initially = supplier_price
+        category: product.categoryName || "Electronics",
+        stock: product.stock || 100,
+        product_sku: product.productSku || "",
+      });
+
+    } catch (error: any) {
+      console.error('❌ Failed to fetch US pricing:', error);
+      setError(error.message || 'Failed to calculate US shipping. Please try again.');
+      
+      // Fallback: use product price only (but show warning)
+      const fallbackPrice = typeof product.sellPrice === 'string' 
+        ? parseFloat(product.sellPrice.match(/[\d.]+/)?.[0] || '0')
+        : product.sellPrice;
+
+      setImportForm({
+        pid: product.pid,
+        title: product.productNameEn || product.productName || "",
+        description: product.description || "",
+        image_url: product.productImage || "",
+        product_price: fallbackPrice,
+        us_shipping_fee: 0,
+        supplier_price: fallbackPrice,
+        profit_amount: 0,
+        selling_price: fallbackPrice,
+        category: product.categoryName || "Electronics",
+        stock: product.stock || 100,
+        product_sku: product.productSku || "",
+      });
+    } finally {
+      setCalculatingShipping(false);
+    }
   };
 
   const handleProfitChange = (profit: number) => {
@@ -539,72 +603,150 @@ export default function CJProductImportPage() {
             {/* Pricing Calculator */}
             <div style={{ background: "#f0fdf4", padding: "1.5rem", borderRadius: "12px", marginBottom: "1.5rem", border: "2px solid #bbf7d0" }}>
               <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#166534", marginBottom: "1rem" }}>
-                💰 Pricing Calculator
+                💰 US Dropshipping Pricing
               </h3>
 
-              <div style={{ display: "grid", gap: "1rem" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, color: "#166534", marginBottom: "0.5rem" }}>
-                    Supplier Price (Read Only)
-                  </label>
-                  <input
-                    type="number"
-                    value={importForm.supplier_price}
-                    readOnly
-                    style={{
-                      width: "100%",
-                      padding: "0.75rem",
-                      border: "2px solid #bbf7d0",
-                      borderRadius: "8px",
-                      background: "#f9fafb",
-                      color: "#6b7280",
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, color: "#166534", marginBottom: "0.5rem" }}>
-                    Profit Amount ($) - Set Your Profit
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={importForm.profit_amount}
-                    onChange={(e) => handleProfitChange(parseFloat(e.target.value))}
-                    placeholder="0.00"
-                    style={{
-                      width: "100%",
-                      padding: "0.75rem",
-                      border: "2px solid #16a34a",
-                      borderRadius: "8px",
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, color: "#166534", marginBottom: "0.5rem" }}>
-                    Selling Price (Auto-Calculated)
-                  </label>
-                  <input
-                    type="number"
-                    value={importForm.selling_price.toFixed(2)}
-                    readOnly
-                    style={{
-                      width: "100%",
-                      padding: "0.75rem",
-                      border: "2px solid #16a34a",
-                      borderRadius: "8px",
-                      fontSize: "1.25rem",
-                      fontWeight: 700,
-                      color: "#16a34a",
-                      background: "#ffffff",
-                    }}
-                  />
-                  <p style={{ fontSize: "0.75rem", color: "#166534", marginTop: "0.5rem" }}>
-                    = Supplier Price (${importForm.supplier_price.toFixed(2)}) + Profit (${importForm.profit_amount.toFixed(2)})
+              {calculatingShipping ? (
+                <div style={{ textAlign: "center", padding: "2rem" }}>
+                  <ButtonSpinner />
+                  <p style={{ color: "#166534", marginTop: "1rem" }}>
+                    Calculating US shipping fee...
                   </p>
                 </div>
-              </div>
+              ) : (
+                <div style={{ display: "grid", gap: "1rem" }}>
+                  {/* Product Price (Read Only) */}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, color: "#166534", marginBottom: "0.5rem" }}>
+                      CJ Product Price (Read Only)
+                    </label>
+                    <input
+                      type="number"
+                      value={importForm.product_price.toFixed(2)}
+                      readOnly
+                      style={{
+                        width: "100%",
+                        padding: "0.75rem",
+                        border: "2px solid #bbf7d0",
+                        borderRadius: "8px",
+                        background: "#f9fafb",
+                        color: "#6b7280",
+                        fontSize: "1rem",
+                      }}
+                    />
+                  </div>
+
+                  {/* US Shipping Fee (Read Only) */}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, color: "#166534", marginBottom: "0.5rem" }}>
+                      US Shipping Fee (Read Only)
+                    </label>
+                    <input
+                      type="number"
+                      value={importForm.us_shipping_fee.toFixed(2)}
+                      readOnly
+                      style={{
+                        width: "100%",
+                        padding: "0.75rem",
+                        border: "2px solid #bbf7d0",
+                        borderRadius: "8px",
+                        background: "#f9fafb",
+                        color: "#6b7280",
+                        fontSize: "1rem",
+                      }}
+                    />
+                    {importForm.us_shipping_fee === 0 && (
+                      <p style={{ fontSize: "0.75rem", color: "#166534", marginTop: "0.5rem", fontWeight: 600 }}>
+                        🎉 FREE SHIPPING to US!
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Divider */}
+                  <div style={{ borderTop: "2px solid #16a34a", margin: "0.5rem 0" }} />
+
+                  {/* US Dropshipping Price (Supplier Price) */}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.9rem", fontWeight: 700, color: "#166534", marginBottom: "0.5rem" }}>
+                      📦 US Dropshipping Cost (Supplier Price)
+                    </label>
+                    <input
+                      type="number"
+                      value={importForm.supplier_price.toFixed(2)}
+                      readOnly
+                      style={{
+                        width: "100%",
+                        padding: "0.75rem",
+                        border: "3px solid #16a34a",
+                        borderRadius: "8px",
+                        fontSize: "1.25rem",
+                        fontWeight: 700,
+                        color: "#16a34a",
+                        background: "#ffffff",
+                      }}
+                    />
+                    <p style={{ fontSize: "0.75rem", color: "#166534", marginTop: "0.5rem" }}>
+                      = Product (${importForm.product_price.toFixed(2)}) + US Shipping (${importForm.us_shipping_fee.toFixed(2)})
+                    </p>
+                    <p style={{ fontSize: "0.7rem", color: "#059669", marginTop: "0.25rem", fontStyle: "italic" }}>
+                      * This is your base cost. Always based on US shipping regardless of customer location.
+                    </p>
+                  </div>
+
+                  {/* Divider */}
+                  <div style={{ borderTop: "1px dashed #bbf7d0", margin: "0.5rem 0" }} />
+
+                  {/* Your Profit */}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, color: "#166534", marginBottom: "0.5rem" }}>
+                      💵 Your Profit Amount ($) - Set Your Markup
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={importForm.profit_amount}
+                      onChange={(e) => handleProfitChange(parseFloat(e.target.value) || 0)}
+                      placeholder="0.00"
+                      style={{
+                        width: "100%",
+                        padding: "0.75rem",
+                        border: "2px solid #16a34a",
+                        borderRadius: "8px",
+                        fontSize: "1rem",
+                      }}
+                    />
+                  </div>
+
+                  {/* Divider */}
+                  <div style={{ borderTop: "2px solid #16a34a", margin: "0.5rem 0" }} />
+
+                  {/* Selling Price (Auto-Calculated) */}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.9rem", fontWeight: 700, color: "#166534", marginBottom: "0.5rem" }}>
+                      💰 Customer Selling Price (Auto-Calculated)
+                    </label>
+                    <input
+                      type="number"
+                      value={importForm.selling_price.toFixed(2)}
+                      readOnly
+                      style={{
+                        width: "100%",
+                        padding: "0.75rem",
+                        border: "3px solid #16a34a",
+                        borderRadius: "8px",
+                        fontSize: "1.5rem",
+                        fontWeight: 700,
+                        color: "#16a34a",
+                        background: "#ffffff",
+                      }}
+                    />
+                    <p style={{ fontSize: "0.75rem", color: "#166534", marginTop: "0.5rem" }}>
+                      = Supplier Price (${importForm.supplier_price.toFixed(2)}) + Your Profit (${importForm.profit_amount.toFixed(2)})
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Other Fields */}
