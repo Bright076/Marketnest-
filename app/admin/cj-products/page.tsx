@@ -10,9 +10,11 @@ interface CJProduct {
   productSku: string;
   productImage: string;
   sellPrice: string | number;
+  productWeight: string | number;
   stock: number;
   categoryName: string;
   description?: string;
+  isFreeShipping?: boolean;
 }
 
 interface ImportFormData {

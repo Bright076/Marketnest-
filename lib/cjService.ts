@@ -279,7 +279,7 @@ export async function calculateUSShippingFee(pid: string, quantity: number = 1):
                        result.data?.fee ||
                        0;
 
-    console.log(`✅ US Shipping Fee for ${pid}: $${shippingFee}`);
+    console.log(`✅ US Shipping Fee for ${pid}: ${shippingFee}`);
     
     if (shippingFee === 0) {
       console.log('💡 Note: Shipping fee is $0 - product may have free shipping or calculation returned 0');
@@ -298,66 +298,86 @@ export async function calculateUSShippingFee(pid: string, quantity: number = 1):
 
 /**
  * Get complete US dropshipping price for a product
+ * Uses weight-based shipping estimate since CJ freight API is unreliable
  * Includes product price + US shipping fee
  */
-export async function getCJProductUSDropshippingPrice(pid: string): Promise<{
+export async function getCJProductUSDropshippingPrice(params: {
+  pid: string;
+  sellPrice: number | string;
+  productWeight?: number | string;
+  isFreeShipping?: boolean;
+}): Promise<{
   productPrice: number;
   usShippingFee: number;
   usDropshippingPrice: number;
-  productDetails: CJProduct;
+  shippingEstimated: boolean;
 }> {
   try {
+    const { pid, sellPrice, productWeight, isFreeShipping } = params;
+    
     console.log(`Getting US dropshipping price for PID: ${pid}`);
 
-    // Get product details
-    const productResponse = await getCJProductDetails(pid);
-    
-    if (!productResponse.result || !productResponse.data) {
-      throw new Error('Failed to fetch product details');
-    }
-
-    const product = productResponse.data;
-    
     // Parse product price (may be a range like "31.25 -- 37.85")
     let productPrice = 0;
-    if (typeof product.sellPrice === 'string') {
+    if (typeof sellPrice === 'string') {
       // If it's a range, use the lower price
-      const priceMatch = product.sellPrice.match(/[\d.]+/);
+      const priceMatch = sellPrice.match(/[\d.]+/);
       productPrice = priceMatch ? parseFloat(priceMatch[0]) : 0;
     } else {
-      productPrice = Number(product.sellPrice);
+      productPrice = Number(sellPrice);
     }
 
-    console.log(`Product Price: $${productPrice}`);
+    console.log(`Product Price: ${productPrice}`);
 
     // Check if product has free shipping
-    const isFreeShipping = product.isFreeShipping === true;
     let usShippingFee = 0;
+    let shippingEstimated = false;
 
-    if (!isFreeShipping) {
-      // Calculate US shipping
-      usShippingFee = await calculateUSShippingFee(pid, 1);
+    if (isFreeShipping) {
+      console.log('✅ Product has FREE SHIPPING to US');
+      usShippingFee = 0;
+      shippingEstimated = false;
     } else {
-      console.log('Product has FREE SHIPPING to US');
+      // Use weight-based estimate
+      // CJ freight API is unreliable, so estimate based on weight
+      const weightInGrams = typeof productWeight === 'string' 
+        ? parseFloat(productWeight) 
+        : (productWeight || 0);
+
+      if (weightInGrams > 0) {
+        // Formula: $5 base + $0.015 per gram
+        // Min: $5, Max: $50
+        const estimatedFee = 5 + (weightInGrams * 0.015);
+        usShippingFee = Math.min(Math.max(estimatedFee, 5), 50);
+        shippingEstimated = true;
+        
+        console.log(`📦 Weight-based US shipping estimate: ${weightInGrams}g → $${usShippingFee.toFixed(2)}`);
+      } else {
+        // No weight data, use minimum shipping
+        usShippingFee = 5;
+        shippingEstimated = true;
+        console.log('⚠️ No weight data, using minimum $5 shipping estimate');
+      }
     }
 
     const usDropshippingPrice = productPrice + usShippingFee;
 
-    console.log('US Dropshipping Price Breakdown:', {
-      productPrice,
-      usShippingFee,
-      usDropshippingPrice,
-      isFreeShipping,
+    console.log('✅ US Dropshipping Price Breakdown:', {
+      productPrice: productPrice.toFixed(2),
+      usShippingFee: usShippingFee.toFixed(2),
+      usDropshippingPrice: usDropshippingPrice.toFixed(2),
+      isFreeShipping: isFreeShipping || false,
+      shippingEstimated,
     });
 
     return {
       productPrice,
       usShippingFee,
       usDropshippingPrice,
-      productDetails: product,
+      shippingEstimated,
     };
   } catch (error: any) {
-    console.error('Get US Dropshipping Price Error:', error);
+    console.error('❌ Get US Dropshipping Price Error:', error);
     throw error;
   }
 }
