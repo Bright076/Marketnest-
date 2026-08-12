@@ -118,7 +118,7 @@ export default function AdminLayout({
   }
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#f9fafb" }}>
+    <div style={{ display: "flex", minHeight: "100vh", background: "#f9fafb", width: "100%", maxWidth: "100vw", overflowX: "hidden" }}>
       {/* Mobile Header */}
       <div style={{
         position: "fixed",
@@ -132,7 +132,8 @@ export default function AdminLayout({
         alignItems: "center",
         justifyContent: "space-between",
         padding: "0 1rem",
-        zIndex: 100
+        zIndex: 100,
+        maxWidth: "100vw"
       }}
       className="mobile-header">
         <h1 style={{
@@ -263,7 +264,10 @@ export default function AdminLayout({
         marginLeft: "260px",
         flex: 1,
         padding: "2rem",
-        minHeight: "100vh"
+        minHeight: "100vh",
+        width: "100%",
+        maxWidth: "100vw",
+        overflowX: "hidden"
       }}
       className="main-content">
         {children}
@@ -293,6 +297,11 @@ export default function AdminLayout({
             margin-left: 0 !important;
             padding: 1rem !important;
             padding-top: calc(60px + 1rem) !important;
+            max-width: 100vw !important;
+            overflow-x: hidden !important;
+          }
+          .main-content > * {
+            max-width: 100% !important;
           }
           .mobile-overlay {
             display: block;

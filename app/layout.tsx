@@ -33,6 +33,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} antialiased`}>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+      </head>
       <body
         style={{
           minHeight: "100vh",
@@ -40,11 +43,13 @@ export default function RootLayout({
           flexDirection: "column",
           margin: 0,
           width: "100%",
+          maxWidth: "100vw",
+          overflowX: "hidden",
         }}
       >
         <Providers>
           <Navbar />
-          <main style={{ flexGrow: 1, width: "100%" }}>{children}</main>
+          <main style={{ flexGrow: 1, width: "100%", maxWidth: "100vw", overflowX: "hidden" }}>{children}</main>
           <Footer />
         </Providers>
       </body>

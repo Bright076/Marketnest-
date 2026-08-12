@@ -50,9 +50,12 @@ export default function Home() {
       {/* Free Shipping Banner */}
       <div style={{
         background: "linear-gradient(135deg, #16a34a 0%, #059669 100%)",
-        padding: "1.5rem",
+        padding: "1.5rem 1rem",
         textAlign: "center",
-        boxShadow: "0 4px 12px rgba(22, 163, 74, 0.2)"
+        boxShadow: "0 4px 12px rgba(22, 163, 74, 0.2)",
+        width: "100%",
+        maxWidth: "100vw",
+        overflowX: "hidden"
       }}>
         <div style={{
           maxWidth: "1200px",
@@ -61,28 +64,29 @@ export default function Home() {
           flexWrap: "wrap",
           justifyContent: "center",
           alignItems: "center",
-          gap: "2rem",
-          color: "#ffffff"
+          gap: "clamp(1rem, 3vw, 2rem)",
+          color: "#ffffff",
+          width: "100%"
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <span style={{ fontSize: "2rem" }}>🚚</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: "fit-content" }}>
+            <span style={{ fontSize: "clamp(1.5rem, 5vw, 2rem)" }}>🚚</span>
             <div style={{ textAlign: "left" }}>
-              <div style={{ fontWeight: 800, fontSize: "1.1rem" }}>FREE SHIPPING</div>
-              <div style={{ fontSize: "0.85rem", opacity: 0.9 }}>On All Orders</div>
+              <div style={{ fontWeight: 800, fontSize: "clamp(0.9rem, 3vw, 1.1rem)" }}>FREE SHIPPING</div>
+              <div style={{ fontSize: "clamp(0.75rem, 2.5vw, 0.85rem)", opacity: 0.9 }}>On All Orders</div>
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <span style={{ fontSize: "2rem" }}>✅</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: "fit-content" }}>
+            <span style={{ fontSize: "clamp(1.5rem, 5vw, 2rem)" }}>✅</span>
             <div style={{ textAlign: "left" }}>
-              <div style={{ fontWeight: 800, fontSize: "1.1rem" }}>QUALITY GUARANTEED</div>
-              <div style={{ fontSize: "0.85rem", opacity: 0.9 }}>100% Authentic Products</div>
+              <div style={{ fontWeight: 800, fontSize: "clamp(0.9rem, 3vw, 1.1rem)" }}>QUALITY GUARANTEED</div>
+              <div style={{ fontSize: "clamp(0.75rem, 2.5vw, 0.85rem)", opacity: 0.9 }}>100% Authentic Products</div>
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <span style={{ fontSize: "2rem" }}>🌍</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: "fit-content" }}>
+            <span style={{ fontSize: "clamp(1.5rem, 5vw, 2rem)" }}>🌍</span>
             <div style={{ textAlign: "left" }}>
-              <div style={{ fontWeight: 800, fontSize: "1.1rem" }}>GLOBAL DELIVERY</div>
-              <div style={{ fontSize: "0.85rem", opacity: 0.9 }}>Worldwide Shipping</div>
+              <div style={{ fontWeight: 800, fontSize: "clamp(0.9rem, 3vw, 1.1rem)" }}>GLOBAL DELIVERY</div>
+              <div style={{ fontSize: "clamp(0.75rem, 2.5vw, 0.85rem)", opacity: 0.9 }}>Worldwide Shipping</div>
             </div>
           </div>
         </div>
@@ -94,6 +98,7 @@ export default function Home() {
           maxWidth: "1200px",
           margin: "0 auto",
           padding: "5rem 1.5rem",
+          width: "100%"
         }}
       >
         <div
@@ -104,12 +109,13 @@ export default function Home() {
             marginBottom: "2.5rem",
             flexWrap: "wrap",
             gap: "1rem",
+            width: "100%"
           }}
         >
           <div>
             <h2
               style={{
-                fontSize: "1.85rem",
+                fontSize: "clamp(1.5rem, 4vw, 1.85rem)",
                 fontWeight: 800,
                 color: "#111827",
                 margin: "0 0 0.4rem",
@@ -118,7 +124,7 @@ export default function Home() {
             >
               Featured Products
             </h2>
-            <p style={{ color: "#6b7280", fontSize: "0.95rem", margin: 0 }}>
+            <p style={{ color: "#6b7280", fontSize: "clamp(0.85rem, 2.5vw, 0.95rem)", margin: 0 }}>
               Quality products from around the world
             </p>
           </div>
@@ -165,8 +171,9 @@ export default function Home() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fill, minmax(min(300px, 100%), 1fr))",
               gap: "1.75rem",
+              width: "100%"
             }}
           >
             {products.map((product) => (
@@ -206,6 +213,9 @@ export default function Home() {
           background: "#f0fdf4",
           borderTop: "1px solid #bbf7d0",
           borderBottom: "1px solid #bbf7d0",
+          width: "100%",
+          maxWidth: "100vw",
+          overflowX: "hidden"
         }}
       >
         <div
@@ -214,9 +224,10 @@ export default function Home() {
             margin: "0 auto",
             padding: "3rem 1.5rem",
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(200px, 100%), 1fr))",
             gap: "2rem",
             textAlign: "center",
+            width: "100%"
           }}
         >
           {[

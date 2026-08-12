@@ -22,6 +22,7 @@ export default function CheckoutPage() {
     customer_postal_code: "",
     order_notes: ""
   });
+  const [paymentMethod, setPaymentMethod] = useState<"flutterwave" | "usdt">("flutterwave");
   const currency = "USD"; // Always USD
 
   useEffect(() => {
@@ -111,7 +112,7 @@ export default function CheckoutPage() {
               order_notes: formData.order_notes || null,
               amount_paid: itemTotal,
               currency: "USD",
-              payment_method: "vendo_flutterwave",
+              payment_method: paymentMethod === "flutterwave" ? "vendo_flutterwave" : "usdt_trc20",
               payment_status: 'pending',
               order_status: 'pending'
             }
@@ -144,44 +145,85 @@ export default function CheckoutPage() {
 
       console.log('✅ Orders created:', orderIds);
 
-      // Create payment with Vendo
-      console.log('💳 Creating payment with Vendo...');
-      
-      const paymentResponse = await fetch('/api/payment/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderIds: orderIds,
-          customerInfo: {
-            name: formData.customer_name,
-            email: formData.customer_email,
-            phone: formData.customer_phone
-          },
-          deliveryInfo: {
-            country: formData.customer_country,
-            state: formData.customer_state,
-            city: formData.customer_city,
-            address: formData.customer_address,
-            postalCode: formData.customer_postal_code,
-            notes: formData.order_notes
-          },
-          totalAmountUSD: totalUSD
-        })
-      });
+      // Handle payment based on selected method
+      if (paymentMethod === "flutterwave") {
+        // Flutterwave/Vendo payment flow
+        console.log('💳 Creating payment with Vendo...');
+        
+        const paymentResponse = await fetch('/api/payment/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderIds: orderIds,
+            customerInfo: {
+              name: formData.customer_name,
+              email: formData.customer_email,
+              phone: formData.customer_phone
+            },
+            deliveryInfo: {
+              country: formData.customer_country,
+              state: formData.customer_state,
+              city: formData.customer_city,
+              address: formData.customer_address,
+              postalCode: formData.customer_postal_code,
+              notes: formData.order_notes
+            },
+            totalAmountUSD: totalUSD
+          })
+        });
 
-      const paymentResult = await paymentResponse.json();
+        const paymentResult = await paymentResponse.json();
 
-      if (!paymentResult.success) {
-        throw new Error(paymentResult.error || 'Failed to create payment');
+        if (!paymentResult.success) {
+          throw new Error(paymentResult.error || 'Failed to create payment');
+        }
+
+        console.log('✅ Payment created:', paymentResult.partnerReference);
+
+        // Clear cart before redirect
+        clearCart();
+
+        // Redirect to Vendo payment page
+        window.location.href = paymentResult.paymentLink;
+      } else {
+        // USDT payment flow - redirect to USDT payment instructions
+        // Send Telegram notification for USDT order
+        try {
+          await fetch('/api/telegram-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              orders: orders,
+              customerInfo: {
+                name: formData.customer_name,
+                email: formData.customer_email,
+                phone: formData.customer_phone
+              },
+              deliveryInfo: {
+                country: formData.customer_country,
+                state: formData.customer_state,
+                city: formData.customer_city,
+                address: formData.customer_address,
+                postalCode: formData.customer_postal_code,
+                notes: formData.order_notes
+              },
+              paymentMethod: "USDT (TRC20)",
+              totalAmount: totalUSD,
+              currency: "USD"
+            })
+          });
+          console.log('✅ Telegram notification sent');
+        } catch (telegramError) {
+          console.error('Failed to send Telegram notification:', telegramError);
+          // Don't fail the order if Telegram fails
+        }
+
+        // Clear cart
+        clearCart();
+
+        // Redirect to USDT payment instructions
+        router.push(`/payment/usdt?amount=${totalUSD}&order=${orderIds[0]}`);
       }
-
-      console.log('✅ Payment created:', paymentResult.partnerReference);
-
-      // Clear cart before redirect
-      clearCart();
-
-      // Redirect to Vendo payment page
-      window.location.href = paymentResult.paymentLink;
 
     } catch (error: any) {
       console.error('Error creating order:', error);
@@ -526,32 +568,145 @@ export default function CheckoutPage() {
                 />
               </div>
 
+              {/* Payment Method Selection */}
+              <div style={{ marginBottom: "2rem" }}>
+                <label style={{
+                  display: "block",
+                  fontSize: "0.9rem",
+                  fontWeight: 600,
+                  color: "#374151",
+                  marginBottom: "1rem"
+                }}>
+                  Choose Payment Method *
+                </label>
+                
+                <div style={{ display: "grid", gap: "1rem" }}>
+                  {/* Flutterwave Option */}
+                  <div
+                    onClick={() => setPaymentMethod("flutterwave")}
+                    style={{
+                      padding: "1.25rem",
+                      border: `2px solid ${paymentMethod === "flutterwave" ? "#16a34a" : "#e5e7eb"}`,
+                      borderRadius: "12px",
+                      cursor: "pointer",
+                      background: paymentMethod === "flutterwave" ? "#f0fdf4" : "#ffffff",
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                      <div style={{
+                        width: "24px",
+                        height: "24px",
+                        borderRadius: "50%",
+                        border: `2px solid ${paymentMethod === "flutterwave" ? "#16a34a" : "#d1d5db"}`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0
+                      }}>
+                        {paymentMethod === "flutterwave" && (
+                          <div style={{
+                            width: "12px",
+                            height: "12px",
+                            borderRadius: "50%",
+                            background: "#16a34a"
+                          }} />
+                        )}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{
+                          fontSize: "1.05rem",
+                          fontWeight: 700,
+                          color: "#111827",
+                          marginBottom: "0.25rem"
+                        }}>
+                          💳 Card Payment (Flutterwave)
+                        </div>
+                        <div style={{ fontSize: "0.875rem", color: "#6b7280" }}>
+                          Pay with credit/debit card, bank transfer, or mobile money
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* USDT Option */}
+                  <div
+                    onClick={() => setPaymentMethod("usdt")}
+                    style={{
+                      padding: "1.25rem",
+                      border: `2px solid ${paymentMethod === "usdt" ? "#16a34a" : "#e5e7eb"}`,
+                      borderRadius: "12px",
+                      cursor: "pointer",
+                      background: paymentMethod === "usdt" ? "#f0fdf4" : "#ffffff",
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                      <div style={{
+                        width: "24px",
+                        height: "24px",
+                        borderRadius: "50%",
+                        border: `2px solid ${paymentMethod === "usdt" ? "#16a34a" : "#d1d5db"}`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0
+                      }}>
+                        {paymentMethod === "usdt" && (
+                          <div style={{
+                            width: "12px",
+                            height: "12px",
+                            borderRadius: "50%",
+                            background: "#16a34a"
+                          }} />
+                        )}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{
+                          fontSize: "1.05rem",
+                          fontWeight: 700,
+                          color: "#111827",
+                          marginBottom: "0.25rem"
+                        }}>
+                          🪙 USDT (TRC20)
+                        </div>
+                        <div style={{ fontSize: "0.875rem", color: "#6b7280" }}>
+                          Pay with USDT cryptocurrency on Tron network
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Payment Notice */}
               <div style={{
                 marginBottom: "2rem",
                 padding: "1.5rem",
-                background: "#f0fdf4",
+                background: paymentMethod === "flutterwave" ? "#f0fdf4" : "#fef3c7",
                 borderRadius: "12px",
-                border: "2px solid #bbf7d0"
+                border: `2px solid ${paymentMethod === "flutterwave" ? "#bbf7d0" : "#fde047"}`
               }}>
                 <h3 style={{ 
                   fontSize: "1rem", 
                   fontWeight: 700, 
-                  color: "#166534",
+                  color: paymentMethod === "flutterwave" ? "#166534" : "#92400e",
                   marginBottom: "0.75rem",
                   display: "flex",
                   alignItems: "center",
                   gap: "0.5rem"
                 }}>
-                  💳 Secure Payment
+                  {paymentMethod === "flutterwave" ? "💳 Secure Payment" : "⚠️ Important"}
                 </h3>
                 <p style={{ 
                   fontSize: "0.9rem", 
-                  color: "#166534",
+                  color: paymentMethod === "flutterwave" ? "#166534" : "#92400e",
                   margin: 0,
                   lineHeight: 1.6
                 }}>
-                  You'll be redirected to our secure payment partner to complete your purchase. Your order will be confirmed once payment is successful.
+                  {paymentMethod === "flutterwave" 
+                    ? "You'll be redirected to our secure payment partner to complete your purchase. Your order will be confirmed once payment is successful."
+                    : "You must send USDT only through the Tron (TRC20) network. Sending through another network may result in loss of funds. Payment must be manually confirmed by admin."}
                 </p>
               </div>
 
@@ -572,7 +727,7 @@ export default function CheckoutPage() {
                   boxShadow: submitting ? "none" : "0 4px 12px rgba(22, 163, 74, 0.3)"
                 }}
               >
-                {submitting ? "Processing..." : `Proceed to Payment - $${displayTotal.toFixed(2)} USD`}
+                {submitting ? "Processing..." : paymentMethod === "flutterwave" ? `Proceed to Payment - $${displayTotal.toFixed(2)} USD` : `Continue to USDT Payment - ${displayTotal.toFixed(2)} USDT`}
               </button>
             </form>
           </div>

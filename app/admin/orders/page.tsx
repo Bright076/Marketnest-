@@ -13,6 +13,7 @@ interface Order {
   customer_city: string;
   customer_address: string;
   amount_paid: number;
+  payment_method?: string;
   payment_status: string;
   order_status: string;
   created_at: string;
@@ -207,6 +208,7 @@ export default function OrdersPage() {
                     <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", fontWeight: 600, color: "#6b7280", borderBottom: "2px solid #e5e7eb" }}>Customer</th>
                     <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", fontWeight: 600, color: "#6b7280", borderBottom: "2px solid #e5e7eb" }}>Product</th>
                     <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", fontWeight: 600, color: "#6b7280", borderBottom: "2px solid #e5e7eb" }}>Amount</th>
+                    <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", fontWeight: 600, color: "#6b7280", borderBottom: "2px solid #e5e7eb" }}>Method</th>
                     <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", fontWeight: 600, color: "#6b7280", borderBottom: "2px solid #e5e7eb" }}>Payment</th>
                     <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", fontWeight: 600, color: "#6b7280", borderBottom: "2px solid #e5e7eb" }}>Status</th>
                     <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", fontWeight: 600, color: "#6b7280", borderBottom: "2px solid #e5e7eb" }}>Date</th>
@@ -244,6 +246,18 @@ export default function OrdersPage() {
                         </td>
                         <td style={{ padding: "1rem", fontWeight: 700, color: "#16a34a" }}>
                           ${Number(order.amount_paid).toFixed(2)}
+                        </td>
+                        <td style={{ padding: "1rem" }}>
+                          <span style={{
+                            padding: "0.375rem 0.75rem",
+                            borderRadius: "6px",
+                            fontSize: "0.8rem",
+                            fontWeight: 600,
+                            background: order.payment_method === "usdt_trc20" ? "#fef3c7" : "#e0e7ff",
+                            color: order.payment_method === "usdt_trc20" ? "#92400e" : "#4338ca"
+                          }}>
+                            {order.payment_method === "usdt_trc20" ? "🪙 USDT" : "💳 Card"}
+                          </span>
                         </td>
                         <td style={{ padding: "1rem" }}>
                           <select
@@ -357,6 +371,18 @@ export default function OrdersPage() {
                     <div style={{ fontSize: "0.75rem", color: "#6b7280", marginBottom: "0.25rem", fontWeight: 600, textTransform: "uppercase" }}>Customer</div>
                     <div style={{ fontWeight: 600, color: "#111827" }}>{order.customer_name}</div>
                     <div style={{ fontSize: "0.85rem", color: "#6b7280" }}>{order.customer_phone}</div>
+                    <div style={{ marginTop: "0.5rem" }}>
+                      <span style={{
+                        padding: "0.25rem 0.625rem",
+                        borderRadius: "6px",
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                        background: order.payment_method === "usdt_trc20" ? "#fef3c7" : "#e0e7ff",
+                        color: order.payment_method === "usdt_trc20" ? "#92400e" : "#4338ca"
+                      }}>
+                        {order.payment_method === "usdt_trc20" ? "🪙 USDT" : "💳 Card"}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Status Dropdowns */}

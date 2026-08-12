@@ -117,6 +117,9 @@ export default function DashboardPage() {
         minHeight: "100vh",
         background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)",
         padding: "2rem 1rem",
+        width: "100%",
+        maxWidth: "100vw",
+        overflowX: "hidden"
       }}
     >
       {/* Header */}
@@ -129,6 +132,7 @@ export default function DashboardPage() {
           alignItems: "center",
           flexWrap: "wrap",
           gap: "1rem",
+          width: "100%"
         }}
       >
         <Link
@@ -172,7 +176,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Main Content */}
-      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+      <div style={{ maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
         {/* Welcome Card */}
         <div
           style={{
@@ -181,6 +185,8 @@ export default function DashboardPage() {
             boxShadow: "0 10px 40px rgba(0, 0, 0, 0.08)",
             padding: "clamp(1.5rem, 4vw, 2.5rem)",
             marginBottom: "2rem",
+            width: "100%",
+            maxWidth: "100%"
           }}
         >
           <div

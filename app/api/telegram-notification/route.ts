@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { orders, customerInfo, deliveryInfo, totalAmount, currency } = body;
+    const { orders, customerInfo, deliveryInfo, totalAmount, currency, paymentMethod } = body;
 
     // Get Telegram credentials from environment
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -18,6 +18,27 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Determine if this is a USDT payment
+    const isUSDT = paymentMethod === "USDT (TRC20)" || paymentMethod === "usdt_trc20";
+    
+    // Format amount display based on payment method
+    const amountDisplay = isUSDT 
+      ? `${totalAmount.toFixed(2)} USDT` 
+      : `${totalAmount.toFixed(2)} ${currency}`;
+
+    // USDT alert section (only for USDT payments)
+    const usdtAlert = isUSDT ? `
+
+⚠️ USDT PAYMENT ALERT:
+This order was paid with USDT (TRC20). You MUST manually verify the payment in your Spenda account before marking as paid and processing the order.
+
+USDT Wallet: ${process.env.NEXT_PUBLIC_USDT_TRC20_ADDRESS || "TP7h5qLNhXpfJ1PAS3swcobSQQc17E23fr"}
+Expected Amount: ${totalAmount.toFixed(2)} USDT
+Network: Tron (TRC20)
+
+Do NOT process this order until payment is confirmed!
+` : '';
+
     // Build simple plain text message (no special formatting)
     const message = `🎉 NEW ORDER RECEIVED!
 
@@ -27,7 +48,9 @@ Email: ${customerInfo.email}
 Phone: ${customerInfo.phone}
 
 Order Summary:
-Total Amount: $${totalAmount.toFixed(2)} ${currency}
+Payment Method: ${paymentMethod || "Card Payment"}
+Total Amount: ${amountDisplay}
+Payment Status: ${isUSDT ? "⚠️ PENDING - Manual Confirmation Required" : "Processing"}
 Number of Items: ${orders.length}
 
 Delivery Address:
@@ -37,7 +60,7 @@ ${deliveryInfo.country}
 ${deliveryInfo.postalCode ? `Postal Code: ${deliveryInfo.postalCode}` : ''}
 
 ${deliveryInfo.notes ? `Order Notes: ${deliveryInfo.notes}` : ''}
-
+${usdtAlert}
 View in admin dashboard:
 https://marketnest-shop-one.vercel.app/admin/orders
 
