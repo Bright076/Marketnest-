@@ -3,9 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 // Force Node.js runtime (not Edge) for better compatibility
 export const runtime = 'nodejs';
 
-// Force Node.js runtime (not Edge) for better compatibility
-export const runtime = 'nodejs';
-
 export async function POST(request: NextRequest) {
   // Top-level error handling to catch any initialization errors
   try {
