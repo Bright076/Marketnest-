@@ -218,21 +218,22 @@ export async function getCJProductDetails(pid: string): Promise<CJApiResponse<CJ
 
 /**
  * Calculate US shipping fee for a product
- * Uses CJ's freight calculation API
+ * Uses CJ's freight calculation API with variantSku (CJ requires vid or variantSku)
  */
-export async function calculateUSShippingFee(pid: string, quantity: number = 1): Promise<number> {
+export async function calculateUSShippingFee(productSku: string, quantity: number = 1): Promise<number> {
   try {
-    console.log(`🚚 Calculating US shipping for PID: ${pid}, Quantity: ${quantity}`);
+    console.log(`🚚 Calculating US shipping for SKU: ${productSku}, Quantity: ${quantity}`);
     
     const authResponse = await authenticateCJ();
     const accessToken = authResponse.data.accessToken;
 
+    // CJ API requires "vid" or "variantSku" - we use variantSku (product SKU)
     const requestBody = {
       startCountryCode: 'CN', // Most CJ products ship from China
       endCountryCode: 'US',   // Always calculate for US
       products: [
         {
-          pid: pid,
+          variantSku: productSku,  // Use variantSku instead of pid
           quantity: quantity,
         }
       ],
@@ -254,11 +255,7 @@ export async function calculateUSShippingFee(pid: string, quantity: number = 1):
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`❌ CJ Freight Calculate Error ${response.status}:`, errorText);
-      
-      // If API endpoint doesn't exist or fails, log and return 0
-      // Don't throw - this allows import to continue with just product price
-      console.warn('⚠️ Shipping calculation failed, using $0 (FREE) as fallback');
-      return 0;
+      throw new Error(`Failed to calculate shipping: ${errorText}`);
     }
 
     const result = await response.json();
@@ -266,8 +263,7 @@ export async function calculateUSShippingFee(pid: string, quantity: number = 1):
 
     if (!result.result) {
       console.error('❌ CJ Freight Calculate returned result=false:', result.message);
-      console.warn('⚠️ Using $0 (FREE) as fallback');
-      return 0;
+      throw new Error(result.message || 'Freight calculation failed');
     }
 
     // Extract shipping fee from response
@@ -279,30 +275,28 @@ export async function calculateUSShippingFee(pid: string, quantity: number = 1):
                        result.data?.fee ||
                        0;
 
-    console.log(`✅ US Shipping Fee for ${pid}: ${shippingFee}`);
+    console.log(`✅ US Shipping Fee for ${productSku}: $${shippingFee}`);
     
     if (shippingFee === 0) {
-      console.log('💡 Note: Shipping fee is $0 - product may have free shipping or calculation returned 0');
+      console.log('🎉 Product has FREE SHIPPING to US!');
     }
     
     return Number(shippingFee);
   } catch (error: any) {
     console.error('❌ US Shipping Calculation Error:', error);
     console.error('Error details:', error.message, error.stack);
-    
-    // Return 0 instead of throwing - allows import to continue
-    console.warn('⚠️ Shipping calculation failed, using $0 (FREE) as fallback');
-    return 0;
+    throw error; // Throw so we know there's an issue
   }
 }
 
 /**
  * Get complete US dropshipping price for a product
- * Uses weight-based shipping estimate since CJ freight API is unreliable
+ * Uses CJ freight API with variantSku for accurate shipping
  * Includes product price + US shipping fee
  */
 export async function getCJProductUSDropshippingPrice(params: {
   pid: string;
+  productSku: string;
   sellPrice: number | string;
   productWeight?: number | string;
   isFreeShipping?: boolean;
@@ -313,9 +307,9 @@ export async function getCJProductUSDropshippingPrice(params: {
   shippingEstimated: boolean;
 }> {
   try {
-    const { pid, sellPrice, productWeight, isFreeShipping } = params;
+    const { pid, productSku, sellPrice, productWeight, isFreeShipping } = params;
     
-    console.log(`Getting US dropshipping price for PID: ${pid}`);
+    console.log(`Getting US dropshipping price for PID: ${pid}, SKU: ${productSku}`);
 
     // Parse product price (may be a range like "31.25 -- 37.85")
     let productPrice = 0;
@@ -338,25 +332,31 @@ export async function getCJProductUSDropshippingPrice(params: {
       usShippingFee = 0;
       shippingEstimated = false;
     } else {
-      // Use weight-based estimate
-      // CJ freight API is unreliable, so estimate based on weight
-      const weightInGrams = typeof productWeight === 'string' 
-        ? parseFloat(productWeight) 
-        : (productWeight || 0);
-
-      if (weightInGrams > 0) {
-        // Formula: $5 base + $0.015 per gram
-        // Min: $5, Max: $50
-        const estimatedFee = 5 + (weightInGrams * 0.015);
-        usShippingFee = Math.min(Math.max(estimatedFee, 5), 50);
-        shippingEstimated = true;
+      try {
+        // Try to get actual shipping from CJ API using variantSku
+        console.log('🚚 Calling CJ freight API with variantSku...');
+        usShippingFee = await calculateUSShippingFee(productSku, 1);
+        shippingEstimated = false; // It's from actual API
+        console.log(`✅ Got actual CJ shipping: $${usShippingFee}`);
+      } catch (error: any) {
+        // If API fails, fall back to weight-based estimate
+        console.warn('⚠️ CJ freight API failed, using weight-based estimate:', error.message);
         
-        console.log(`📦 Weight-based US shipping estimate: ${weightInGrams}g → $${usShippingFee.toFixed(2)}`);
-      } else {
-        // No weight data, use minimum shipping
-        usShippingFee = 5;
-        shippingEstimated = true;
-        console.log('⚠️ No weight data, using minimum $5 shipping estimate');
+        const weightInGrams = typeof productWeight === 'string' 
+          ? parseFloat(productWeight) 
+          : (productWeight || 0);
+
+        if (weightInGrams > 0) {
+          // Formula: $5 base + $0.015 per gram
+          const estimatedFee = 5 + (weightInGrams * 0.015);
+          usShippingFee = Math.min(Math.max(estimatedFee, 5), 50);
+          shippingEstimated = true;
+          console.log(`📦 Weight-based estimate: ${weightInGrams}g → $${usShippingFee.toFixed(2)}`);
+        } else {
+          usShippingFee = 5;
+          shippingEstimated = true;
+          console.log('⚠️ No weight data, using minimum $5 estimate');
+        }
       }
     }
 

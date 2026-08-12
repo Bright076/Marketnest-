@@ -193,6 +193,7 @@ export default function CJProductImportPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           pid: product.pid,
+          productSku: product.productSku,
           sellPrice: product.sellPrice,
           productWeight: product.productWeight,
           isFreeShipping: product.isFreeShipping,
@@ -216,7 +217,9 @@ export default function CJProductImportPage() {
 
       // Show note if shipping was estimated
       if (shippingEstimated) {
-        setSuccessMessage('⚠️ Shipping fee is weight-based estimate. Actual CJ shipping API unavailable.');
+        setSuccessMessage('⚠️ Shipping fee is estimated (CJ API fallback). Verify with CJ website.');
+      } else {
+        setSuccessMessage('✅ Shipping fee from CJ API (actual freight calculation).');
       }
 
       // Set form with US dropshipping price
