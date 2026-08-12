@@ -1,15 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase with service role (bypass RLS)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function POST(request: NextRequest) {
   try {
     console.log('🔍 Payment API called');
+    
+    // Initialize Supabase with service role (bypass RLS) - do this INSIDE the function
+    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+      console.error('❌ Supabase configuration missing');
+      return NextResponse.json(
+        { success: false, error: 'Database configuration error' },
+        { status: 500 }
+      );
+    }
+    
+    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
     
     const body = await request.json();
     const { orderIds, customerInfo, deliveryInfo, totalAmountUSD } = body;
