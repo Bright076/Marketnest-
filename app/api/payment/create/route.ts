@@ -14,12 +14,12 @@ export async function POST(request: NextRequest) {
     const VENDO_BASE_URL = process.env.VENDO_BASE_URL || 'https://vendo.com.ng';
     const NEXT_PUBLIC_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://marketnest-shop-one.vercel.app';
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY; // Use service role for server-side operations
 
     console.log('🔑 Environment check:', {
       hasApiKey: !!VENDO_PARTNER_API_KEY,
       hasSupabaseUrl: !!SUPABASE_URL,
-      hasSupabaseKey: !!SUPABASE_ANON_KEY,
+      hasSupabaseServiceKey: !!SUPABASE_SERVICE_ROLE_KEY,
     });
 
     if (!VENDO_PARTNER_API_KEY) {
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       console.error('❌ Supabase configuration missing');
       return NextResponse.json(
         { success: false, error: 'Database configuration error' },
@@ -49,18 +49,21 @@ export async function POST(request: NextRequest) {
     const merchantOrderId = orderIds[0];
 
     console.log('🔍 Fetching orders:', orderIds);
+    console.log('🔍 Order IDs type:', typeof orderIds, Array.isArray(orderIds));
+    console.log('🔍 First order ID:', orderIds[0], 'Type:', typeof orderIds[0]);
 
     // Fetch orders using direct Supabase REST API
     // PostgREST syntax for UUIDs: id=in.(uuid1,uuid2,uuid3) - no quotes needed
     const orderIdsString = orderIds.join(',');
     const ordersUrl = `${SUPABASE_URL}/rest/v1/orders?id=in.(${orderIdsString})&select=id,amount_paid,payment_status`;
     
-    console.log('📍 Query URL:', ordersUrl);
+    console.log('📍 Full query URL:', ordersUrl);
+    console.log('📍 Order IDs string:', orderIdsString);
     
     const ordersResponse = await fetch(ordersUrl, {
         headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'apikey': SUPABASE_SERVICE_ROLE_KEY,
+          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
           'Content-Type': 'application/json',
         }
       }
@@ -70,7 +73,8 @@ export async function POST(request: NextRequest) {
 
     if (!ordersResponse.ok) {
       const errorText = await ordersResponse.text();
-      console.error('❌ Failed to fetch orders:', errorText);
+      console.error('❌ Failed to fetch orders. Status:', ordersResponse.status);
+      console.error('❌ Error response:', errorText);
       return NextResponse.json(
         { success: false, error: 'Failed to verify orders' },
         { status: 400 }
@@ -80,8 +84,10 @@ export async function POST(request: NextRequest) {
     const orders = await ordersResponse.json();
     
     console.log('📦 Orders found:', orders.length);
+    console.log('📦 Orders data:', JSON.stringify(orders, null, 2));
 
     if (!orders || orders.length === 0) {
+      console.error('❌ No orders found in database for IDs:', orderIds);
       return NextResponse.json(
         { success: false, error: 'Invalid order IDs' },
         { status: 400 }
@@ -152,8 +158,8 @@ export async function POST(request: NextRequest) {
     const updateResponse = await fetch(updateUrl, {
       method: 'PATCH',
       headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey': SUPABASE_SERVICE_ROLE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
         'Content-Type': 'application/json',
         'Prefer': 'return=minimal'
       },
