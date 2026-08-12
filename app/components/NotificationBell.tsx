@@ -35,6 +35,22 @@ export default function NotificationBell() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Handle body scroll lock on mobile
+  useEffect(() => {
+    if (isOpen && window.innerWidth <= 768) {
+      document.body.classList.add('notification-open');
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.classList.remove('notification-open');
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.classList.remove('notification-open');
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   useEffect(() => {
     if (user) {
       loadNotifications();
@@ -180,7 +196,47 @@ export default function NotificationBell() {
   }
 
   return (
-    <div ref={dropdownRef} style={{ position: "relative" }}>
+    <>
+      <style dangerouslySetInnerHTML={{__html: `
+        @media (min-width: 769px) {
+          .notification-dropdown {
+            position: absolute !important;
+            top: calc(100% + 0.5rem) !important;
+            right: 0 !important;
+            left: auto !important;
+            width: 380px !important;
+            margin: 0 !important;
+          }
+          .notification-backdrop {
+            display: none !important;
+          }
+        }
+        @media (max-width: 768px) {
+          body.notification-open {
+            overflow: hidden;
+          }
+        }
+      `}} />
+      
+      {/* Backdrop for mobile */}
+      {isOpen && (
+        <div
+          className="notification-backdrop"
+          onClick={() => setIsOpen(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.3)",
+            zIndex: 999,
+            display: "block"
+          }}
+        />
+      )}
+      
+      <div ref={dropdownRef} style={{ position: "relative" }}>
       {/* Notification Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -223,21 +279,26 @@ export default function NotificationBell() {
 
       {/* Dropdown */}
       {isOpen && (
-        <div style={{
-          position: "absolute",
-          top: "calc(100% + 0.5rem)",
-          right: 0,
-          width: "380px",
-          maxWidth: "90vw",
-          maxHeight: "500px",
-          background: "#ffffff",
-          borderRadius: "12px",
-          boxShadow: "0 10px 40px rgba(0, 0, 0, 0.15)",
-          border: "1px solid #e5e7eb",
-          zIndex: 1000,
-          display: "flex",
-          flexDirection: "column"
-        }}>
+        <div 
+          className="notification-dropdown"
+          style={{
+            position: "fixed",
+            top: "60px",
+            right: "0.5rem",
+            left: "0.5rem",
+            width: "auto",
+            maxWidth: "400px",
+            maxHeight: "calc(100vh - 80px)",
+            background: "#ffffff",
+            borderRadius: "12px",
+            boxShadow: "0 10px 40px rgba(0, 0, 0, 0.15)",
+            border: "1px solid #e5e7eb",
+            zIndex: 1000,
+            display: "flex",
+            flexDirection: "column",
+            marginLeft: "auto",
+            marginRight: "auto"
+          }}>
           {/* Header */}
           <div style={{
             padding: "1rem 1.25rem",
@@ -401,5 +462,6 @@ export default function NotificationBell() {
         </div>
       )}
     </div>
+    </>
   );
 }
