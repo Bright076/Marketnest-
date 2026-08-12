@@ -141,9 +141,12 @@ export async function POST(request: NextRequest) {
       }
     };
 
+    console.log('📤 Vendo payload:', JSON.stringify(vendoPayload, null, 2));
     console.log('📤 Calling Vendo API...');
     console.log('📤 Vendo URL:', `${VENDO_BASE_URL}/api/partner/payments/create`);
     console.log('📤 Has API Key:', !!VENDO_PARTNER_API_KEY);
+    console.log('📤 API Key length:', VENDO_PARTNER_API_KEY?.length || 0);
+    console.log('📤 API Key first 8 chars:', VENDO_PARTNER_API_KEY?.substring(0, 8) + '...');
 
     const vendoResponse = await fetch(`${VENDO_BASE_URL}/api/partner/payments/create`, {
       method: 'POST',
@@ -159,18 +162,25 @@ export async function POST(request: NextRequest) {
     const vendoResponseText = await vendoResponse.text();
     
     console.log('📥 Vendo response status:', vendoResponse.status);
+    console.log('📥 Vendo response statusText:', vendoResponse.statusText);
     console.log('📥 Vendo content-type:', contentType);
-    console.log('📥 Vendo response (first 500 chars):', vendoResponseText.substring(0, 500));
+    console.log('📥 Vendo response headers:', JSON.stringify(Object.fromEntries(vendoResponse.headers.entries())));
+    console.log('📥 Vendo full response body:', vendoResponseText);
 
     // Check if response is OK before parsing
     if (!vendoResponse.ok) {
       console.error('❌ Vendo API failed with status:', vendoResponse.status);
       console.error('❌ Vendo error response:', vendoResponseText);
+      console.error('❌ This 403 error means the API key is rejected by Vendo');
+      console.error('❌ Share this response with Vendo API owner to diagnose');
       return NextResponse.json(
         { 
           success: false, 
           error: `Payment provider error: ${vendoResponse.status}`,
-          details: vendoResponseText.substring(0, 200)
+          vendoStatus: vendoResponse.status,
+          vendoStatusText: vendoResponse.statusText,
+          vendoResponse: vendoResponseText,
+          message: 'Vendo API rejected the request. Please contact Vendo support with this error.'
         },
         { status: 500 }
       );
