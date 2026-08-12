@@ -149,11 +149,12 @@ a, button {
 }
 
 
-/* Mobile Responsive Improvements */
 @media (max-width: 768px) {
   /* Ensure proper mobile sizing */
   body {
     font-size: 16px;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   
   /* Force all containers to respect viewport width */
@@ -178,8 +179,9 @@ a, button {
     overflow-wrap: break-word;
   }
   
-  /* Responsive padding for containers */
-  section, main {
+  /* Responsive padding for containers - only for content sections, not full-width sections */
+  section:not(.full-width), 
+  main > div {
     padding-left: clamp(1rem, 3vw, 1.5rem) !important;
     padding-right: clamp(1rem, 3vw, 1.5rem) !important;
   }

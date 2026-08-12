@@ -9,18 +9,28 @@ const supabaseAdmin = createClient(
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🔍 Payment API called');
+    
     const body = await request.json();
     const { orderIds, customerInfo, deliveryInfo, totalAmountUSD } = body;
+    
+    console.log('📦 Request body received:', { orderIds, totalAmountUSD });
 
     // Validate environment variables
     const VENDO_PARTNER_API_KEY = process.env.VENDO_PARTNER_API_KEY;
     const VENDO_BASE_URL = process.env.VENDO_BASE_URL || 'https://vendo.com.ng';
     const NEXT_PUBLIC_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://marketnest-shop-one.vercel.app';
 
+    console.log('🔑 Environment check:', {
+      hasApiKey: !!VENDO_PARTNER_API_KEY,
+      vendoBaseUrl: VENDO_BASE_URL,
+      siteUrl: NEXT_PUBLIC_SITE_URL
+    });
+
     if (!VENDO_PARTNER_API_KEY) {
       console.error('❌ VENDO_PARTNER_API_KEY not configured');
       return NextResponse.json(
-        { success: false, error: 'Payment system not configured' },
+        { success: false, error: 'Payment system not configured. Please contact support.' },
         { status: 500 }
       );
     }

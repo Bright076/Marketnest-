@@ -42,6 +42,7 @@ export default function RootLayout({
           display: "flex",
           flexDirection: "column",
           margin: 0,
+          padding: 0,
           width: "100%",
           maxWidth: "100vw",
           overflowX: "hidden",
@@ -49,7 +50,14 @@ export default function RootLayout({
       >
         <Providers>
           <Navbar />
-          <main style={{ flexGrow: 1, width: "100%", maxWidth: "100vw", overflowX: "hidden" }}>{children}</main>
+          <main style={{ 
+            flexGrow: 1, 
+            width: "100%", 
+            maxWidth: "100vw", 
+            overflowX: "hidden",
+            margin: 0,
+            padding: 0
+          }}>{children}</main>
           <Footer />
         </Providers>
       </body>
