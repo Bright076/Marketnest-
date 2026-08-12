@@ -1,6 +1,7 @@
 "use client";
 
 import { useCart } from "../context/CartContext";
+import { useToast } from "../context/ToastContext";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -26,6 +27,7 @@ export default function ProductCard({
   category = "electronics",
 }: ProductCardProps) {
   const router = useRouter();
+  const toast = useToast();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -47,16 +49,15 @@ export default function ProductCard({
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        // Not logged in - show alert and redirect to login
-        if (confirm("You need to login to add items to cart. Would you like to login now?")) {
-          router.push("/login");
-        }
+        // Not logged in - show toast and redirect to login
+        toast.warning("Please login to add items to cart");
+        setTimeout(() => router.push("/login"), 1500);
         return;
       }
       
       // User is logged in - proceed with adding to cart
       addToCart({ id, name, price, image, type, description, category });
-      alert(`🛒 Added "${name}" to cart!`);
+      toast.success(`Added "${name}" to cart!`);
     } finally {
       setIsLoading(false);
     }

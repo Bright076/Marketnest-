@@ -5,10 +5,12 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "../context/CartContext";
+import { useToast } from "../context/ToastContext";
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { cart, cartTotal, clearCart } = useCart();
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -32,11 +34,12 @@ export default function CheckoutPage() {
   const checkAuthAndLoadProfile = async () => {
     try {
       // Check if user is logged in
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error } = await supabase.auth.getUser();
       
-      if (!user) {
-        alert("Please login to checkout");
-        router.push("/login");
+      if (error || !user) {
+        // Don't redirect immediately - let them fill the form first
+        console.log('User not logged in - will need to login before checkout');
+        setLoading(false);
         return;
       }
 
@@ -59,9 +62,16 @@ export default function CheckoutPage() {
           customer_postal_code: "",
           order_notes: ""
         });
+      } else {
+        // Profile doesn't exist, just pre-fill email
+        setFormData({
+          ...formData,
+          customer_email: user.email || ""
+        });
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error loading profile:', error);
+      // Don't block checkout - they can still fill the form
     } finally {
       setLoading(false);
     }
@@ -71,17 +81,21 @@ export default function CheckoutPage() {
     e.preventDefault();
     
     if (cart.length === 0) {
-      alert("Your cart is empty");
+      toast.error("Your cart is empty");
       return;
     }
 
     setSubmitting(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      // Re-check authentication before submitting
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
       
-      if (!user) {
-        throw new Error("User not authenticated");
+      if (authError || !user) {
+        setSubmitting(false);
+        toast.error("Your session has expired. Please login again.");
+        setTimeout(() => router.push("/login"), 1500);
+        return; // Don't clear cart, just redirect
       }
 
       // Calculate total in USD
@@ -172,6 +186,17 @@ export default function CheckoutPage() {
           })
         });
 
+        // Check if response is actually JSON
+        const contentType = paymentResponse.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          console.error('❌ Payment API returned non-JSON response');
+          console.error('Status:', paymentResponse.status);
+          console.error('Content-Type:', contentType);
+          const text = await paymentResponse.text();
+          console.error('Response:', text.substring(0, 500));
+          throw new Error('Payment system error. Please contact support.');
+        }
+
         const paymentResult = await paymentResponse.json();
 
         if (!paymentResult.success) {
@@ -227,9 +252,13 @@ export default function CheckoutPage() {
 
     } catch (error: any) {
       console.error('Error creating order:', error);
-      alert('Failed to create order: ' + error.message);
-    } finally {
+      // Don't clear cart on error - let user try again
+      toast.error(error.message || 'Failed to create order. Please try again.');
       setSubmitting(false);
+      // If it's an auth error, redirect to login
+      if (error.message && error.message.includes('auth')) {
+        setTimeout(() => router.push("/login"), 1500);
+      }
     }
   };
 

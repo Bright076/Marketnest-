@@ -132,7 +132,8 @@ export default function DashboardPage() {
           alignItems: "center",
           flexWrap: "wrap",
           gap: "1rem",
-          width: "100%"
+          width: "100%",
+          padding: "0 clamp(0.5rem, 2vw, 1rem)"
         }}
       >
         <Link
@@ -145,6 +146,7 @@ export default function DashboardPage() {
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
             textDecoration: "none",
+            flexShrink: 0
           }}
         >
           MarketNest
@@ -161,6 +163,8 @@ export default function DashboardPage() {
             fontWeight: 600,
             cursor: "pointer",
             transition: "all 0.3s",
+            flexShrink: 0,
+            whiteSpace: "nowrap"
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = "#fef2f2";

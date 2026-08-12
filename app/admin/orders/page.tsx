@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { useToast } from "@/app/context/ToastContext";
 import Link from "next/link";
 
 interface Order {
@@ -27,6 +28,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
+  const toast = useToast();
 
   useEffect(() => {
     loadOrders();
@@ -74,10 +76,10 @@ export default function OrdersPage() {
         order.id === orderId ? { ...order, order_status: newStatus } : order
       ));
 
-      alert('Order status updated!');
+      toast.success('Order status updated!');
     } catch (error: any) {
       console.error('Error updating order:', error);
-      alert('Failed to update order: ' + error.message);
+      toast.error('Failed to update order');
     }
   };
 
@@ -94,10 +96,10 @@ export default function OrdersPage() {
         order.id === orderId ? { ...order, payment_status: newStatus } : order
       ));
 
-      alert('Payment status updated!');
+      toast.success('Payment status updated!');
     } catch (error: any) {
       console.error('Error updating payment:', error);
-      alert('Failed to update payment: ' + error.message);
+      toast.error('Failed to update payment');
     }
   };
 

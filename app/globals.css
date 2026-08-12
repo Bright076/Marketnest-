@@ -180,7 +180,18 @@ a, button {
   
   /* Responsive padding for containers */
   section, main {
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
+    padding-left: clamp(1rem, 3vw, 1.5rem) !important;
+    padding-right: clamp(1rem, 3vw, 1.5rem) !important;
+  }
+  
+  /* Fix grid layouts on mobile */
+  [style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Make images responsive */
+  img {
+    max-width: 100% !important;
+    height: auto !important;
   }
 }

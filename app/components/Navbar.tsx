@@ -81,27 +81,37 @@ export default function Navbar() {
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
           borderBottom: "1px solid #e5e7eb",
+          width: "100%",
+          maxWidth: "100vw",
+          overflowX: "hidden",
         }}
       >
         <div
           style={{
             maxWidth: "1200px",
             margin: "0 auto",
-            padding: "0 1.5rem",
+            padding: "0 1rem",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             height: "60px",
+            width: "100%",
           }}
         >
           {/* Logo */}
-          <Link href="/" style={{ textDecoration: "none" }}>
+          <Link href="/" style={{ textDecoration: "none", flexShrink: 0, maxWidth: "45vw" }}>
             <Image
               src="/1000282492.png"
               alt="MarketNest"
               width={200}
               height={48}
-              style={{ objectFit: "contain", height: "auto", maxHeight: "48px", maxWidth: "50vw" }}
+              style={{ 
+                objectFit: "contain", 
+                height: "auto", 
+                maxHeight: "48px", 
+                width: "auto",
+                maxWidth: "100%"
+              }}
               priority
               unoptimized
             />
@@ -126,7 +136,12 @@ export default function Navbar() {
           </div>
 
           {/* Global Action items */}
-          <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+          <div style={{ 
+            display: "flex", 
+            gap: "0.5rem", 
+            alignItems: "center",
+            flexShrink: 0
+          }}>
             {/* Notification Bell - Only for logged-in users */}
             {user && !isAdmin && <NotificationBell />}
             
