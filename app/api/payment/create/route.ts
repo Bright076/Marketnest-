@@ -48,10 +48,16 @@ export async function POST(request: NextRequest) {
 
     const merchantOrderId = orderIds[0];
 
-    // Fetch orders using direct Supabase REST API (avoiding SDK import issues)
-    const ordersResponse = await fetch(
-      `${SUPABASE_URL}/rest/v1/orders?id=in.(${orderIds.join(',')})&select=id,amount_paid,payment_status`,
-      {
+    console.log('🔍 Fetching orders:', orderIds);
+
+    // Fetch orders using direct Supabase REST API
+    // PostgREST syntax for UUIDs: id=in.(uuid1,uuid2,uuid3) - no quotes needed
+    const orderIdsString = orderIds.join(',');
+    const ordersUrl = `${SUPABASE_URL}/rest/v1/orders?id=in.(${orderIdsString})&select=id,amount_paid,payment_status`;
+    
+    console.log('📍 Query URL:', ordersUrl);
+    
+    const ordersResponse = await fetch(ordersUrl, {
         headers: {
           'apikey': SUPABASE_ANON_KEY,
           'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
@@ -60,8 +66,11 @@ export async function POST(request: NextRequest) {
       }
     );
 
+    console.log('📥 Orders response status:', ordersResponse.status);
+
     if (!ordersResponse.ok) {
-      console.error('❌ Failed to fetch orders');
+      const errorText = await ordersResponse.text();
+      console.error('❌ Failed to fetch orders:', errorText);
       return NextResponse.json(
         { success: false, error: 'Failed to verify orders' },
         { status: 400 }
@@ -69,6 +78,8 @@ export async function POST(request: NextRequest) {
     }
 
     const orders = await ordersResponse.json();
+    
+    console.log('📦 Orders found:', orders.length);
 
     if (!orders || orders.length === 0) {
       return NextResponse.json(
@@ -137,25 +148,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Update orders using direct REST API
-    const updateResponse = await fetch(
-      `${SUPABASE_URL}/rest/v1/orders?id=in.(${orderIds.join(',')})`,
-      {
-        method: 'PATCH',
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify({
-          merchant_order_id: merchantOrderId,
-          partner_reference: partnerReference,
-          payment_method: 'vendo_flutterwave',
-          currency: 'USD',
-          payment_status: 'pending'
-        })
-      }
-    );
+    const updateUrl = `${SUPABASE_URL}/rest/v1/orders?id=in.(${orderIds.join(',')})`;
+    const updateResponse = await fetch(updateUrl, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        merchant_order_id: merchantOrderId,
+        partner_reference: partnerReference,
+        payment_method: 'vendo_flutterwave',
+        currency: 'USD',
+        payment_status: 'pending'
+      })
+    });
 
     if (!updateResponse.ok) {
       console.error('❌ Failed to update orders');
