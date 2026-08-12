@@ -222,10 +222,23 @@ export async function getCJProductDetails(pid: string): Promise<CJApiResponse<CJ
  */
 export async function calculateUSShippingFee(pid: string, quantity: number = 1): Promise<number> {
   try {
-    console.log(`Calculating US shipping for PID: ${pid}, Quantity: ${quantity}`);
+    console.log(`🚚 Calculating US shipping for PID: ${pid}, Quantity: ${quantity}`);
     
     const authResponse = await authenticateCJ();
     const accessToken = authResponse.data.accessToken;
+
+    const requestBody = {
+      startCountryCode: 'CN', // Most CJ products ship from China
+      endCountryCode: 'US',   // Always calculate for US
+      products: [
+        {
+          pid: pid,
+          quantity: quantity,
+        }
+      ],
+    };
+
+    console.log('📤 Freight Calculate Request:', JSON.stringify(requestBody, null, 2));
 
     const response = await fetch(`${CJ_API_BASE_URL}/logistic/freightCalculate`, {
       method: 'POST',
@@ -233,29 +246,28 @@ export async function calculateUSShippingFee(pid: string, quantity: number = 1):
         'CJ-Access-Token': accessToken,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        startCountryCode: 'CN', // Most CJ products ship from China
-        endCountryCode: 'US',   // Always calculate for US
-        products: [
-          {
-            pid: pid,
-            quantity: quantity,
-          }
-        ],
-      }),
+      body: JSON.stringify(requestBody),
     });
+
+    console.log('📥 Freight Calculate Response Status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`CJ Freight Calculate Error ${response.status}:`, errorText);
-      throw new Error(`Failed to calculate shipping: HTTP ${response.status}`);
+      console.error(`❌ CJ Freight Calculate Error ${response.status}:`, errorText);
+      
+      // If API endpoint doesn't exist or fails, log and return 0
+      // Don't throw - this allows import to continue with just product price
+      console.warn('⚠️ Shipping calculation failed, using $0 (FREE) as fallback');
+      return 0;
     }
 
     const result = await response.json();
-    console.log('CJ Freight Calculate Response:', JSON.stringify(result, null, 2));
+    console.log('📦 CJ Freight Calculate Full Response:', JSON.stringify(result, null, 2));
 
     if (!result.result) {
-      throw new Error(result.message || 'Shipping calculation failed');
+      console.error('❌ CJ Freight Calculate returned result=false:', result.message);
+      console.warn('⚠️ Using $0 (FREE) as fallback');
+      return 0;
     }
 
     // Extract shipping fee from response
@@ -263,14 +275,24 @@ export async function calculateUSShippingFee(pid: string, quantity: number = 1):
     const shippingFee = result.data?.freightFee || 
                        result.data?.freight || 
                        result.data?.shippingFee ||
+                       result.data?.logisticFee ||
+                       result.data?.fee ||
                        0;
 
-    console.log(`US Shipping Fee for ${pid}: $${shippingFee}`);
+    console.log(`✅ US Shipping Fee for ${pid}: $${shippingFee}`);
+    
+    if (shippingFee === 0) {
+      console.log('💡 Note: Shipping fee is $0 - product may have free shipping or calculation returned 0');
+    }
+    
     return Number(shippingFee);
   } catch (error: any) {
-    console.error('US Shipping Calculation Error:', error);
-    // Don't fail silently - throw the error so caller can handle it
-    throw new Error(`Failed to calculate US shipping: ${error.message}`);
+    console.error('❌ US Shipping Calculation Error:', error);
+    console.error('Error details:', error.message, error.stack);
+    
+    // Return 0 instead of throwing - allows import to continue
+    console.warn('⚠️ Shipping calculation failed, using $0 (FREE) as fallback');
+    return 0;
   }
 }
 

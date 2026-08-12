@@ -6,7 +6,7 @@ import { getCJProductUSDropshippingPrice } from "@/lib/cjService";
 
 export async function POST(request: NextRequest) {
   try {
-    const { pid } = await request.json();
+    const { pid, sellPrice, productWeight, isFreeShipping } = await request.json();
 
     if (!pid) {
       return NextResponse.json(
@@ -18,14 +18,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!sellPrice) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: { message: "Product price (sellPrice) is required" },
+        },
+        { status: 400 }
+      );
+    }
+
     console.log(`📦 Calculating US dropshipping price for PID: ${pid}`);
 
-    const pricing = await getCJProductUSDropshippingPrice(pid);
+    const pricing = await getCJProductUSDropshippingPrice({
+      pid,
+      sellPrice,
+      productWeight: productWeight || 0,
+      isFreeShipping: isFreeShipping || false,
+    });
 
     console.log('✅ US Dropshipping Price calculated:', {
       productPrice: pricing.productPrice,
       usShippingFee: pricing.usShippingFee,
       total: pricing.usDropshippingPrice,
+      estimated: pricing.shippingEstimated,
     });
 
     return NextResponse.json({
@@ -35,6 +51,7 @@ export async function POST(request: NextRequest) {
         productPrice: pricing.productPrice,
         usShippingFee: pricing.usShippingFee,
         usDropshippingPrice: pricing.usDropshippingPrice,
+        shippingEstimated: pricing.shippingEstimated,
         isFreeShipping: pricing.usShippingFee === 0,
       },
     });

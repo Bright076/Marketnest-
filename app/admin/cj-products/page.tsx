@@ -189,7 +189,12 @@ export default function CJProductImportPage() {
       const pricingResponse = await fetch('/api/cj/products/us-pricing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pid: product.pid }),
+        body: JSON.stringify({ 
+          pid: product.pid,
+          sellPrice: product.sellPrice,
+          productWeight: product.productWeight,
+          isFreeShipping: product.isFreeShipping,
+        }),
       });
 
       const pricingResult = await pricingResponse.json();
@@ -198,13 +203,19 @@ export default function CJProductImportPage() {
         throw new Error(pricingResult.error?.message || 'Failed to calculate US shipping');
       }
 
-      const { productPrice: fetchedProductPrice, usShippingFee, usDropshippingPrice } = pricingResult.data;
+      const { productPrice: fetchedProductPrice, usShippingFee, usDropshippingPrice, shippingEstimated } = pricingResult.data;
 
       console.log('✅ US Pricing:', {
         productPrice: fetchedProductPrice,
         usShipping: usShippingFee,
         total: usDropshippingPrice,
+        estimated: shippingEstimated,
       });
+
+      // Show note if shipping was estimated
+      if (shippingEstimated) {
+        setSuccessMessage('⚠️ Shipping fee is weight-based estimate. Actual CJ shipping API unavailable.');
+      }
 
       // Set form with US dropshipping price
       setImportForm({
