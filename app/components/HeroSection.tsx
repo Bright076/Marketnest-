@@ -88,6 +88,9 @@ export default function HeroSection() {
           display: "flex",
           alignItems: "center",
           overflow: "hidden",
+          width: "100%",
+          margin: 0,
+          padding: 0,
         }}
       >
         {/* Background Image with Overlay */}
@@ -153,7 +156,7 @@ export default function HeroSection() {
           style={{
             maxWidth: "1200px",
             margin: "0 auto",
-            padding: "4rem 1.5rem",
+            padding: "4rem clamp(1rem, 3vw, 1.5rem)",
             position: "relative",
             zIndex: 3,
             width: "100%",
