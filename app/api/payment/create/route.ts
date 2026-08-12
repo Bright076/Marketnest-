@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,37 +9,34 @@ export async function POST(request: NextRequest) {
     
     console.log('📦 Request data:', { orderIds, totalAmountUSD });
 
-    // Validate and load environment variables
+    // Validate environment variables
     const VENDO_PARTNER_API_KEY = process.env.VENDO_PARTNER_API_KEY;
     const VENDO_BASE_URL = process.env.VENDO_BASE_URL || 'https://vendo.com.ng';
     const NEXT_PUBLIC_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://marketnest-shop-one.vercel.app';
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     console.log('🔑 Environment check:', {
       hasApiKey: !!VENDO_PARTNER_API_KEY,
       hasSupabaseUrl: !!SUPABASE_URL,
-      hasSupabaseKey: !!SUPABASE_SERVICE_KEY,
+      hasSupabaseKey: !!SUPABASE_ANON_KEY,
     });
 
     if (!VENDO_PARTNER_API_KEY) {
       console.error('❌ VENDO_PARTNER_API_KEY not configured');
       return NextResponse.json(
-        { success: false, error: 'Payment system not configured. Please contact support.' },
+        { success: false, error: 'Payment system not configured' },
         { status: 500 }
       );
     }
 
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
       console.error('❌ Supabase configuration missing');
       return NextResponse.json(
-        { success: false, error: 'Database configuration error. Please contact support.' },
+        { success: false, error: 'Database configuration error' },
         { status: 500 }
       );
     }
-
-    // Initialize Supabase client
-    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
     // Validate order IDs
     if (!orderIds || orderIds.length === 0) {
@@ -50,17 +46,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get the first order ID to use as merchant order ID
     const merchantOrderId = orderIds[0];
 
-    // Verify orders exist and calculate server-side total
-    const { data: orders, error: ordersError } = await supabaseAdmin
-      .from('orders')
-      .select('id, amount_paid, payment_status')
-      .in('id', orderIds);
+    // Fetch orders using direct Supabase REST API (avoiding SDK import issues)
+    const ordersResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/orders?id=in.(${orderIds.join(',')})&select=id,amount_paid,payment_status`,
+      {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        }
+      }
+    );
 
-    if (ordersError || !orders || orders.length === 0) {
-      console.error('❌ Failed to fetch orders:', ordersError);
+    if (!ordersResponse.ok) {
+      console.error('❌ Failed to fetch orders');
+      return NextResponse.json(
+        { success: false, error: 'Failed to verify orders' },
+        { status: 400 }
+      );
+    }
+
+    const orders = await ordersResponse.json();
+
+    if (!orders || orders.length === 0) {
       return NextResponse.json(
         { success: false, error: 'Invalid order IDs' },
         { status: 400 }
@@ -68,7 +78,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if any order is already paid
-    const paidOrder = orders.find(order => order.payment_status === 'paid');
+    const paidOrder = orders.find((order: any) => order.payment_status === 'paid');
     if (paidOrder) {
       return NextResponse.json(
         { success: false, error: 'One or more orders already paid' },
@@ -76,19 +86,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate total from server-side data (never trust client)
-    const serverTotalUSD = orders.reduce((sum, order) => sum + Number(order.amount_paid), 0);
-    const amountUSD = serverTotalUSD;
+    // Calculate total from server-side data
+    const serverTotalUSD = orders.reduce((sum: number, order: any) => sum + Number(order.amount_paid), 0);
 
-    console.log('💰 Payment calculation:', {
-      serverTotalUSD,
-      amountUSD,
-      merchantOrderId
-    });
+    console.log('💰 Payment:', { totalUSD: serverTotalUSD, merchantOrderId });
 
     // Create payment request to Vendo
     const vendoPayload = {
-      amount: amountUSD,
+      amount: serverTotalUSD,
       currency: 'USD',
       customer: {
         name: customerInfo.name,
@@ -105,7 +110,7 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    console.log('📤 Sending payment request to Vendo...');
+    console.log('📤 Calling Vendo API...');
 
     const vendoResponse = await fetch(`${VENDO_BASE_URL}/api/partner/payments/create`, {
       method: 'POST',
@@ -118,38 +123,46 @@ export async function POST(request: NextRequest) {
 
     const vendoResult = await vendoResponse.json();
 
-    console.log('📥 Vendo API response:', { success: vendoResult.success, status: vendoResponse.status });
+    console.log('📥 Vendo response:', { success: vendoResult.success });
 
     if (!vendoResponse.ok || !vendoResult.success) {
-      console.error('❌ Vendo API error:', vendoResult);
-      throw new Error(vendoResult.message || 'Failed to create payment with Vendo');
+      console.error('❌ Vendo error:', vendoResult);
+      throw new Error(vendoResult.message || 'Failed to create payment');
     }
 
-    // Extract payment details from Vendo response
     const { partnerReference, paymentLink, status } = vendoResult;
 
     if (!partnerReference || !paymentLink) {
-      throw new Error('Invalid response from Vendo - missing required fields');
+      throw new Error('Invalid Vendo response');
     }
 
-    // Update all orders with payment information
-    const { error: updateError } = await supabaseAdmin
-      .from('orders')
-      .update({
-        merchant_order_id: merchantOrderId,
-        partner_reference: partnerReference,
-        payment_method: 'vendo_flutterwave',
-        currency: 'USD',
-        payment_status: 'pending'
-      })
-      .in('id', orderIds);
+    // Update orders using direct REST API
+    const updateResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/orders?id=in.(${orderIds.join(',')})`,
+      {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          merchant_order_id: merchantOrderId,
+          partner_reference: partnerReference,
+          payment_method: 'vendo_flutterwave',
+          currency: 'USD',
+          payment_status: 'pending'
+        })
+      }
+    );
 
-    if (updateError) {
-      console.error('❌ Failed to update orders:', updateError);
-      throw new Error('Failed to save payment information');
+    if (!updateResponse.ok) {
+      console.error('❌ Failed to update orders');
+      // Don't fail the payment, just log
     }
 
-    console.log('✅ Payment created successfully!');
+    console.log('✅ Payment created!');
 
     return NextResponse.json({
       success: true,
@@ -157,15 +170,15 @@ export async function POST(request: NextRequest) {
       paymentLink,
       status,
       merchantOrderId,
-      amountUSD
+      amountUSD: serverTotalUSD
     });
 
   } catch (error: any) {
-    console.error('❌ Error creating payment:', error);
+    console.error('❌ Payment error:', error.message);
     return NextResponse.json(
       { 
         success: false, 
-        error: error.message || 'Failed to create payment' 
+        error: error.message || 'Payment failed'
       },
       { status: 500 }
     );
