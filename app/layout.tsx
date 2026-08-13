@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import SocialProofNotification from "./components/SocialProofNotification";
 import Providers from "./Providers";
 
 const inter = Inter({
@@ -59,6 +60,7 @@ export default function RootLayout({
             padding: 0
           }}>{children}</main>
           <Footer />
+          <SocialProofNotification />
         </Providers>
       </body>
     </html>

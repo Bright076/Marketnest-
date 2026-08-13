@@ -24,7 +24,7 @@ export default function CheckoutPage() {
     customer_postal_code: "",
     order_notes: ""
   });
-  const [paymentMethod, setPaymentMethod] = useState<"flutterwave" | "usdt">("flutterwave");
+  const [paymentMethod, setPaymentMethod] = useState<"flutterwave" | "usdt">("usdt"); // Default to USDT since Flutterwave is disabled
   const currency = "USD"; // Always USD
 
   useEffect(() => {
@@ -610,49 +610,53 @@ export default function CheckoutPage() {
                 </label>
                 
                 <div style={{ display: "grid", gap: "1rem" }}>
-                  {/* Flutterwave Option */}
+                  {/* Flutterwave Option - DISABLED */}
                   <div
-                    onClick={() => setPaymentMethod("flutterwave")}
                     style={{
                       padding: "1.25rem",
-                      border: `2px solid ${paymentMethod === "flutterwave" ? "#16a34a" : "#e5e7eb"}`,
+                      border: "2px solid #e5e7eb",
                       borderRadius: "12px",
-                      cursor: "pointer",
-                      background: paymentMethod === "flutterwave" ? "#f0fdf4" : "#ffffff",
-                      transition: "all 0.2s"
+                      background: "#f9fafb",
+                      opacity: 0.6,
+                      cursor: "not-allowed",
+                      position: "relative"
                     }}
                   >
+                    <div style={{
+                      position: "absolute",
+                      top: "12px",
+                      right: "12px",
+                      background: "#dc2626",
+                      color: "#ffffff",
+                      padding: "0.25rem 0.75rem",
+                      borderRadius: "6px",
+                      fontSize: "0.75rem",
+                      fontWeight: 700
+                    }}>
+                      NOT AVAILABLE
+                    </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
                       <div style={{
                         width: "24px",
                         height: "24px",
                         borderRadius: "50%",
-                        border: `2px solid ${paymentMethod === "flutterwave" ? "#16a34a" : "#d1d5db"}`,
+                        border: "2px solid #d1d5db",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         flexShrink: 0
-                      }}>
-                        {paymentMethod === "flutterwave" && (
-                          <div style={{
-                            width: "12px",
-                            height: "12px",
-                            borderRadius: "50%",
-                            background: "#16a34a"
-                          }} />
-                        )}
-                      </div>
+                      }} />
                       <div style={{ flex: 1 }}>
                         <div style={{
                           fontSize: "1.05rem",
                           fontWeight: 700,
-                          color: "#111827",
+                          color: "#6b7280",
                           marginBottom: "0.25rem"
                         }}>
                           💳 Card Payment (Flutterwave)
                         </div>
-                        <div style={{ fontSize: "0.875rem", color: "#6b7280" }}>
-                          Pay with credit/debit card, bank transfer, or mobile money
+                        <div style={{ fontSize: "0.875rem", color: "#9ca3af" }}>
+                          Temporarily unavailable - Use USDT payment below
                         </div>
                       </div>
                     </div>

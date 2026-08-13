@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import HeroSection from "./components/HeroSection";
+import TrustBadges from "./components/TrustBadges";
 import ProductCard from "./components/ProductCard";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
@@ -206,6 +207,9 @@ export default function Home() {
           </div>
         )}
       </section>
+
+      {/* Trust Badges Section */}
+      <TrustBadges />
 
       {/* Trust Banner */}
       <section
