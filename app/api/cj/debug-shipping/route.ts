@@ -149,13 +149,12 @@ export async function POST(request: NextRequest) {
     console.log('─'.repeat(80));
     
     let shippingMethodsResult: any = { message: 'Skipped or no variants' };
-    let shippingMethodsRequest: any = null;
-    let shippingMethodsResponse: any = null;
+    let shippingMethodsResponseStatus: number | null = null;
     
     if (variants.length > 0) {
       const firstVariant = variants[0];
       
-      shippingMethodsRequest = {
+      const methodsRequest = {
         startCountryCode: 'CN',
         endCountryCode: 'US',
         products: [{
@@ -164,21 +163,22 @@ export async function POST(request: NextRequest) {
         }],
       };
       
-      console.log('Request:', JSON.stringify(shippingMethodsRequest, null, 2));
+      console.log('Request:', JSON.stringify(methodsRequest, null, 2));
       
       // Add delay
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      shippingMethodsResponse = await fetch(`${CJ_API_BASE_URL}/logistic/freightCalculate`, {
+      const methodsResponse = await fetch(`${CJ_API_BASE_URL}/logistic/freightCalculate`, {
         method: 'POST',
         headers: {
           'CJ-Access-Token': accessToken,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(shippingMethodsRequest),
+        body: JSON.stringify(methodsRequest),
       });
 
-      shippingMethodsResult = await shippingMethodsResponse.json();
+      shippingMethodsResult = await methodsResponse.json();
+      shippingMethodsResponseStatus = methodsResponse.status;
       console.log('Response:', JSON.stringify(shippingMethodsResult, null, 2));
     }
 
@@ -219,9 +219,13 @@ export async function POST(request: NextRequest) {
             response: withVariantResult,
           },
           shippingMethods: {
-            request: shippingMethodsRequest,
+            request: variants.length > 0 ? {
+              startCountryCode: 'CN',
+              endCountryCode: 'US',
+              products: [{ vid: variants[0]?.vid, quantity }],
+            } : null,
             response: shippingMethodsResult,
-            status: shippingMethodsResponse?.status || null,
+            status: shippingMethodsResponseStatus,
           },
         },
         analysis: {
