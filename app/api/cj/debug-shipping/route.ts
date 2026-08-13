@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
     console.log('\n📦 TEST 3: Freight Calculate with Variant ID');
     console.log('─'.repeat(80));
     
-    let withVariantResult = { message: 'No variants found, skipped' };
+    let withVariantResult: any = { message: 'No variants found, skipped' };
     
     if (variants.length > 0) {
       // Use the first variant
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
     console.log('\n📦 TEST 4: Get All Shipping Methods for Variant');
     console.log('─'.repeat(80));
     
-    let shippingMethodsResult = { message: 'Skipped or no variants' };
+    let shippingMethodsResult: any = { message: 'Skipped or no variants' };
     
     if (variants.length > 0) {
       const firstVariant = variants[0];
