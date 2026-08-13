@@ -352,7 +352,7 @@ export default function CJProductImportPage() {
           </p>
         </div>
         <p style={{ color: "#9ca3af", fontSize: "0.75rem", marginTop: "0.5rem" }}>
-          Version: 2.5 (Smart Search - PID, SKU, Name) - Fixed Pricing
+          Version: 2.6 (Smart Search + Actual CJ Shipping API)
         </p>
       </div>
 
