@@ -149,11 +149,13 @@ export async function POST(request: NextRequest) {
     console.log('─'.repeat(80));
     
     let shippingMethodsResult: any = { message: 'Skipped or no variants' };
+    let shippingMethodsRequest: any = null;
+    let shippingMethodsResponse: any = null;
     
     if (variants.length > 0) {
       const firstVariant = variants[0];
       
-      const shippingMethodsRequest = {
+      shippingMethodsRequest = {
         startCountryCode: 'CN',
         endCountryCode: 'US',
         products: [{
@@ -167,7 +169,7 @@ export async function POST(request: NextRequest) {
       // Add delay
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      const shippingMethodsResponse = await fetch(`${CJ_API_BASE_URL}/logistic/freightCalculate`, {
+      shippingMethodsResponse = await fetch(`${CJ_API_BASE_URL}/logistic/freightCalculate`, {
         method: 'POST',
         headers: {
           'CJ-Access-Token': accessToken,
@@ -219,7 +221,7 @@ export async function POST(request: NextRequest) {
           shippingMethods: {
             request: shippingMethodsRequest,
             response: shippingMethodsResult,
-            status: shippingMethodsResponse.status,
+            status: shippingMethodsResponse?.status || null,
           },
         },
         analysis: {
