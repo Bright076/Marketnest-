@@ -20,7 +20,12 @@ export default function AddProductPage() {
     selling_price: "",
     category: "",
     stock: "",
-    product_type: "local"
+    product_type: "local",
+    is_trending: false,
+    is_deal: false,
+    original_price: "",
+    deal_price: "",
+    deal_ends_at: ""
   });
 
   // Auto-calculate selling price (only for CJ products)
@@ -63,6 +68,31 @@ export default function AddProductPage() {
         throw new Error("Not authenticated");
       }
 
+      // Validation for deals
+      if (formData.is_deal) {
+        if (!formData.original_price || !formData.deal_price || !formData.deal_ends_at) {
+          alert('Please fill in all deal fields');
+          setLoading(false);
+          return;
+        }
+        
+        const originalPrice = parseFloat(formData.original_price);
+        const dealPrice = parseFloat(formData.deal_price);
+        
+        if (dealPrice >= originalPrice) {
+          alert('Deal Price must be lower than Original Price');
+          setLoading(false);
+          return;
+        }
+        
+        const dealEnds = new Date(formData.deal_ends_at);
+        if (dealEnds <= new Date()) {
+          alert('Deal end date must be in the future');
+          setLoading(false);
+          return;
+        }
+      }
+
       const { error } = await supabase.from('products').insert([
         {
           title: formData.title,
@@ -75,6 +105,11 @@ export default function AddProductPage() {
           category: formData.category,
           stock: parseInt(formData.stock),
           product_type: formData.product_type,
+          is_trending: formData.is_trending,
+          is_deal: formData.is_deal,
+          original_price: formData.is_deal ? parseFloat(formData.original_price) : null,
+          deal_price: formData.is_deal ? parseFloat(formData.deal_price) : null,
+          deal_ends_at: formData.is_deal ? new Date(formData.deal_ends_at).toISOString() : null,
           created_by: user.id
         }
       ]);
@@ -506,57 +541,216 @@ export default function AddProductPage() {
           </div>
         </div>
 
-        {/* Product Type */}
-        <div style={{ marginBottom: "2rem" }}>
+        {/* Trending Section */}
+        <div style={{
+          background: "#fef9c3",
+          padding: "1.5rem",
+          borderRadius: "12px",
+          marginBottom: "1.5rem",
+          border: "2px solid #fde047"
+        }}>
+          <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#854d0e", marginBottom: "1rem" }}>
+            🔥 Trending Product
+          </h3>
           <label style={{
-            display: "block",
-            fontSize: "0.9rem",
-            fontWeight: 600,
-            color: "#374151",
-            marginBottom: "0.5rem"
+            display: "flex",
+            alignItems: "center",
+            gap: "1rem",
+            cursor: "pointer",
+            padding: "1rem",
+            background: "#ffffff",
+            borderRadius: "8px",
+            border: `2px solid ${formData.is_trending ? '#ca8a04' : '#e5e7eb'}`
           }}>
-            Product Type *
+            <input
+              type="checkbox"
+              checked={formData.is_trending}
+              onChange={(e) => setFormData({ ...formData, is_trending: e.target.checked })}
+              style={{
+                width: "24px",
+                height: "24px",
+                cursor: "pointer"
+              }}
+            />
+            <div>
+              <div style={{ fontWeight: 600, color: "#111827", marginBottom: "0.25rem" }}>
+                Add to Trending Products
+              </div>
+              <div style={{ fontSize: "0.85rem", color: "#6b7280" }}>
+                This product will appear in the Trending Products section on homepage
+              </div>
+            </div>
           </label>
-          <div style={{ display: "flex", gap: "1rem" }}>
-            <label style={{
-              flex: 1,
+        </div>
+
+        {/* Today's Deal Section */}
+        <div style={{
+          background: "#fef2f2",
+          padding: "1.5rem",
+          borderRadius: "12px",
+          marginBottom: "2rem",
+          border: "2px solid #fecaca"
+        }}>
+          <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#991b1b", marginBottom: "1rem" }}>
+            ⚡ Today's Deal
+          </h3>
+          
+          <label style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "1rem",
+            cursor: "pointer",
+            padding: "1rem",
+            background: "#ffffff",
+            borderRadius: "8px",
+            border: `2px solid ${formData.is_deal ? '#dc2626' : '#e5e7eb'}`,
+            marginBottom: "1rem"
+          }}>
+            <input
+              type="checkbox"
+              checked={formData.is_deal}
+              onChange={(e) => setFormData({ ...formData, is_deal: e.target.checked })}
+              style={{
+                width: "24px",
+                height: "24px",
+                cursor: "pointer"
+              }}
+            />
+            <div>
+              <div style={{ fontWeight: 600, color: "#111827", marginBottom: "0.25rem" }}>
+                Enable Today's Deal
+              </div>
+              <div style={{ fontSize: "0.85rem", color: "#6b7280" }}>
+                Offer this product at a discounted price for a limited time
+              </div>
+            </div>
+          </label>
+
+          {formData.is_deal && (
+            <div style={{
               padding: "1rem",
-              border: `2px solid ${formData.product_type === 'local' ? '#16a34a' : '#e5e7eb'}`,
-              borderRadius: "12px",
-              cursor: "pointer",
-              background: formData.product_type === 'local' ? '#f0fdf4' : '#ffffff',
-              transition: "all 0.2s"
+              background: "#ffffff",
+              borderRadius: "8px",
+              border: "2px solid #fecaca"
             }}>
-              <input
-                type="radio"
-                name="product_type"
-                value="local"
-                checked={formData.product_type === 'local'}
-                onChange={(e) => setFormData({ ...formData, product_type: e.target.value })}
-                style={{ marginRight: "0.5rem" }}
-              />
-              <span style={{ fontWeight: 600 }}>🇳🇬 Local Product</span>
-            </label>
-            <label style={{
-              flex: 1,
-              padding: "1rem",
-              border: `2px solid ${formData.product_type === 'cj' ? '#16a34a' : '#e5e7eb'}`,
-              borderRadius: "12px",
-              cursor: "pointer",
-              background: formData.product_type === 'cj' ? '#f0fdf4' : '#ffffff',
-              transition: "all 0.2s"
-            }}>
-              <input
-                type="radio"
-                name="product_type"
-                value="cj"
-                checked={formData.product_type === 'cj'}
-                onChange={(e) => setFormData({ ...formData, product_type: e.target.value })}
-                style={{ marginRight: "0.5rem" }}
-              />
-              <span style={{ fontWeight: 600 }}>🌍 CJ Product</span>
-            </label>
-          </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
+                <div>
+                  <label style={{
+                    display: "block",
+                    fontSize: "0.85rem",
+                    fontWeight: 600,
+                    color: "#991b1b",
+                    marginBottom: "0.5rem"
+                  }}>
+                    Original Price * ($)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required={formData.is_deal}
+                    value={formData.original_price}
+                    onChange={(e) => setFormData({ ...formData, original_price: e.target.value })}
+                    placeholder="99.99"
+                    style={{
+                      width: "100%",
+                      padding: "0.75rem 1rem",
+                      border: "2px solid #fecaca",
+                      borderRadius: "8px",
+                      fontSize: "1rem",
+                      outline: "none"
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{
+                    display: "block",
+                    fontSize: "0.85rem",
+                    fontWeight: 600,
+                    color: "#991b1b",
+                    marginBottom: "0.5rem"
+                  }}>
+                    Deal Price * ($)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required={formData.is_deal}
+                    value={formData.deal_price}
+                    onChange={(e) => setFormData({ ...formData, deal_price: e.target.value })}
+                    placeholder="79.99"
+                    style={{
+                      width: "100%",
+                      padding: "0.75rem 1rem",
+                      border: "2px solid #dc2626",
+                      borderRadius: "8px",
+                      fontSize: "1rem",
+                      fontWeight: 700,
+                      color: "#dc2626",
+                      outline: "none"
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{
+                    display: "block",
+                    fontSize: "0.85rem",
+                    fontWeight: 600,
+                    color: "#991b1b",
+                    marginBottom: "0.5rem"
+                  }}>
+                    Deal Ends At * (Date & Time)
+                  </label>
+                  <input
+                    type="datetime-local"
+                    required={formData.is_deal}
+                    value={formData.deal_ends_at}
+                    onChange={(e) => setFormData({ ...formData, deal_ends_at: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "0.75rem 1rem",
+                      border: "2px solid #fecaca",
+                      borderRadius: "8px",
+                      fontSize: "1rem",
+                      outline: "none"
+                    }}
+                  />
+                </div>
+              </div>
+
+              {formData.original_price && formData.deal_price && parseFloat(formData.deal_price) < parseFloat(formData.original_price) && (
+                <div style={{
+                  marginTop: "1rem",
+                  padding: "0.75rem 1rem",
+                  background: "#f0fdf4",
+                  border: "2px solid #bbf7d0",
+                  borderRadius: "8px",
+                  color: "#166534",
+                  fontSize: "0.9rem",
+                  fontWeight: 600
+                }}>
+                  💰 Discount: {Math.round(((parseFloat(formData.original_price) - parseFloat(formData.deal_price)) / parseFloat(formData.original_price)) * 100)}% OFF
+                  ({" $" + (parseFloat(formData.original_price) - parseFloat(formData.deal_price)).toFixed(2)} savings)
+                </div>
+              )}
+
+              {formData.deal_price && formData.original_price && parseFloat(formData.deal_price) >= parseFloat(formData.original_price) && (
+                <div style={{
+                  marginTop: "1rem",
+                  padding: "0.75rem 1rem",
+                  background: "#fef2f2",
+                  border: "2px solid #fecaca",
+                  borderRadius: "8px",
+                  color: "#dc2626",
+                  fontSize: "0.85rem",
+                  fontWeight: 600
+                }}>
+                  ⚠️ Deal Price must be lower than Original Price
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Submit Button */}

@@ -15,6 +15,10 @@ interface ProductCardProps {
   type: "local" | "cj";
   description?: string;
   category?: string;
+  is_deal?: boolean;
+  deal_price?: number;
+  deal_ends_at?: string;
+  original_price?: number;
 }
 
 export default function ProductCard({
@@ -25,11 +29,29 @@ export default function ProductCard({
   type,
   description,
   category = "electronics",
+  is_deal = false,
+  deal_price,
+  deal_ends_at,
+  original_price,
 }: ProductCardProps) {
   const router = useRouter();
   const toast = useToast();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Check if deal is active
+  const now = new Date();
+  const isActiveDeal = is_deal && deal_ends_at && new Date(deal_ends_at) > now;
+  
+  // Display price (deal price if active, otherwise regular price)
+  const displayPrice = isActiveDeal && deal_price 
+    ? `$${deal_price.toFixed(2)}` 
+    : price;
+    
+  // Calculate discount percentage
+  const discountPercentage = isActiveDeal && original_price && deal_price
+    ? Math.round(((original_price - deal_price) / original_price) * 100)
+    : 0;
   
   useEffect(() => {
     checkAuth();
@@ -104,16 +126,40 @@ export default function ProductCard({
             position: "absolute",
             top: "12px",
             right: "12px",
-            padding: "0.4rem 0.8rem",
-            borderRadius: "8px",
-            fontSize: "0.75rem",
-            fontWeight: 700,
-            backgroundImage: "linear-gradient(to right, #f97316, #ea580c)",
-            color: "#ffffff",
-            boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.5rem",
+            alignItems: "flex-end",
           }}
         >
-          🌍 Global
+          <div
+            style={{
+              padding: "0.4rem 0.8rem",
+              borderRadius: "8px",
+              fontSize: "0.75rem",
+              fontWeight: 700,
+              backgroundImage: "linear-gradient(to right, #f97316, #ea580c)",
+              color: "#ffffff",
+              boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
+            }}
+          >
+            🌍 Global
+          </div>
+          {isActiveDeal && discountPercentage > 0 && (
+            <div
+              style={{
+                padding: "0.4rem 0.8rem",
+                borderRadius: "8px",
+                fontSize: "0.75rem",
+                fontWeight: 700,
+                backgroundImage: "linear-gradient(to right, #dc2626, #991b1b)",
+                color: "#ffffff",
+                boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
+              }}
+            >
+              ⚡ {discountPercentage}% OFF
+            </div>
+          )}
         </div>
       </div>
 
@@ -129,9 +175,19 @@ export default function ProductCard({
           )}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <span style={{ fontSize: "1.5rem", fontWeight: 800, color: "#f97316" }}>
-            {price}
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
+          {isActiveDeal && original_price && (
+            <span style={{ 
+              fontSize: "1.1rem", 
+              fontWeight: 600, 
+              color: "#9ca3af",
+              textDecoration: "line-through"
+            }}>
+              ${original_price.toFixed(2)}
+            </span>
+          )}
+          <span style={{ fontSize: "1.5rem", fontWeight: 800, color: isActiveDeal ? "#dc2626" : "#f97316" }}>
+            {displayPrice}
           </span>
         </div>
 

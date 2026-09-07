@@ -1,0 +1,72 @@
+Subject: Cloudflare Blocking Partner API Requests - Need IP Whitelist
+
+Hello Vendo Support Team,
+
+I'm integrating your Partner Payment API but my requests are being blocked by Cloudflare's bot protection.
+
+=== ISSUE DETAILS ===
+
+Endpoint: https://vendo.com.ng/api/partner/payments/create
+Method: POST
+Platform: Vercel Serverless Functions
+My Account: [YOUR_EMAIL_HERE]
+API Key (first 20 chars): vd_partner_live_5d9b7f4a...
+
+=== WHAT'S HAPPENING ===
+
+When my server makes API requests, Cloudflare returns a JavaScript challenge page instead of processing the API call:
+
+Response Status: 403 Forbidden
+Response Type: text/html (not application/json)
+Response Body: "<!DOCTYPE html>...<title>Just a moment...</title>..."
+Response Header: "cf-mitigated: challenge"
+Server: cloudflare
+
+This is the standard Cloudflare bot challenge that requires JavaScript, which my server cannot solve.
+
+=== SOLUTION NEEDED ===
+
+Please whitelist Vercel IP addresses in your Cloudflare configuration for Partner API endpoints (/api/partner/*).
+
+Vercel IP Ranges to Whitelist:
+76.76.21.0/24
+76.76.21.21
+76.76.21.164
+76.76.21.241
+
+Complete list: https://vercel.com/docs/infrastructure/ip-addresses
+
+=== HOW TO FIX (For Your Team) ===
+
+1. Log in to Cloudflare Dashboard
+2. Select vendo.com.ng zone
+3. Go to Security → WAF → Tools
+4. Create IP Access Rule:
+   - Value: Add Vercel IP ranges above
+   - Action: Allow
+   - Zone: vendo.com.ng
+5. Apply to path: /api/partner/*
+
+Alternative: Create bypass rule for User-Agent "Vercel-Functions" on /api/partner/* path
+
+=== TEST RESULTS ===
+
+I created a diagnostic endpoint that shows the full error:
+https://marketnest-shop-one.vercel.app/api/payment/vendo-test
+
+You can visit that URL to see the exact response your API is returning.
+
+=== URGENCY ===
+
+This is blocking my payment integration. I have orders waiting to be processed. Once the Cloudflare configuration is updated, my integration will work immediately.
+
+Could you please:
+1. Confirm receipt of this request
+2. Update the Cloudflare configuration
+3. Notify me when it's done so I can test
+
+
+
+---
+
+Technical Note: This is NOT an API key issue. Cloudflare blocks requests BEFORE they reach your API server, so authentication never happens. This is purely a Cloudflare bot protection configuration that needs server-to-server IPs whitelisted.

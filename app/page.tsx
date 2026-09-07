@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import HeroSection from "./components/HeroSection";
+import TodaysDeals from "./components/TodaysDeals";
+import TrendingProducts from "./components/TrendingProducts";
 import TrustBadges from "./components/TrustBadges";
 import ProductCard from "./components/ProductCard";
 import { supabase } from "@/lib/supabaseClient";
@@ -92,6 +94,12 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Today's Deals Section */}
+      <TodaysDeals />
+
+      {/* Trending Products Section */}
+      <TrendingProducts />
 
       {/* Featured Products Section */}
       <section

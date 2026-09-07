@@ -30,6 +30,11 @@ interface ImportFormData {
   category: string;
   stock: number;
   product_sku: string;
+  is_trending: boolean;
+  is_deal: boolean;
+  original_price: string;
+  deal_price: string;
+  deal_ends_at: string;
 }
 
 export default function CJProductImportPage() {
@@ -59,6 +64,11 @@ export default function CJProductImportPage() {
     category: "Electronics",
     stock: 100,
     product_sku: "",
+    is_trending: false,
+    is_deal: false,
+    original_price: "",
+    deal_price: "",
+    deal_ends_at: "",
   });
   const [calculatingShipping, setCalculatingShipping] = useState(false);
 
@@ -236,6 +246,11 @@ export default function CJProductImportPage() {
         category: product.categoryName || "Electronics",
         stock: product.stock || 100,
         product_sku: product.productSku || "",
+        is_trending: false,
+        is_deal: false,
+        original_price: "",
+        deal_price: "",
+        deal_ends_at: "",
       });
 
     } catch (error: any) {
@@ -260,6 +275,11 @@ export default function CJProductImportPage() {
         category: product.categoryName || "Electronics",
         stock: product.stock || 100,
         product_sku: product.productSku || "",
+        is_trending: false,
+        is_deal: false,
+        original_price: "",
+        deal_price: "",
+        deal_ends_at: "",
       });
     } finally {
       setCalculatingShipping(false);
@@ -281,6 +301,25 @@ export default function CJProductImportPage() {
     setError("");
 
     try {
+      // Validation for deals
+      if (importForm.is_deal) {
+        if (!importForm.original_price || !importForm.deal_price || !importForm.deal_ends_at) {
+          throw new Error('Please fill in all deal fields');
+        }
+        
+        const originalPrice = parseFloat(importForm.original_price);
+        const dealPrice = parseFloat(importForm.deal_price);
+        
+        if (dealPrice >= originalPrice) {
+          throw new Error('Deal Price must be lower than Original Price');
+        }
+        
+        const dealEnds = new Date(importForm.deal_ends_at);
+        if (dealEnds <= new Date()) {
+          throw new Error('Deal end date must be in the future');
+        }
+      }
+
       const response = await fetch("/api/cj/products/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -798,6 +837,214 @@ export default function CJProductImportPage() {
                   borderRadius: "8px",
                 }}
               />
+            </div>
+
+            {/* Trending Section */}
+            <div style={{
+              background: "#fef9c3",
+              padding: "1.5rem",
+              borderRadius: "12px",
+              marginBottom: "1.5rem",
+              border: "2px solid #fde047"
+            }}>
+              <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#854d0e", marginBottom: "1rem" }}>
+                🔥 Trending Product
+              </h3>
+              <label style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "1rem",
+                cursor: "pointer",
+                padding: "1rem",
+                background: "#ffffff",
+                borderRadius: "8px",
+                border: `2px solid ${importForm.is_trending ? '#ca8a04' : '#e5e7eb'}`
+              }}>
+                <input
+                  type="checkbox"
+                  checked={importForm.is_trending}
+                  onChange={(e) => setImportForm({ ...importForm, is_trending: e.target.checked })}
+                  style={{
+                    width: "20px",
+                    height: "20px",
+                    cursor: "pointer"
+                  }}
+                />
+                <div style={{ fontSize: "0.85rem" }}>
+                  <div style={{ fontWeight: 600, color: "#111827" }}>
+                    Add to Trending Products
+                  </div>
+                  <div style={{ color: "#6b7280", marginTop: "0.25rem" }}>
+                    Show this product in the Trending section
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            {/* Today's Deal Section */}
+            <div style={{
+              background: "#fef2f2",
+              padding: "1.5rem",
+              borderRadius: "12px",
+              marginBottom: "1.5rem",
+              border: "2px solid #fecaca"
+            }}>
+              <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#991b1b", marginBottom: "1rem" }}>
+                ⚡ Today's Deal
+              </h3>
+              
+              <label style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "1rem",
+                cursor: "pointer",
+                padding: "1rem",
+                background: "#ffffff",
+                borderRadius: "8px",
+                border: `2px solid ${importForm.is_deal ? '#dc2626' : '#e5e7eb'}`,
+                marginBottom: "1rem"
+              }}>
+                <input
+                  type="checkbox"
+                  checked={importForm.is_deal}
+                  onChange={(e) => setImportForm({ ...importForm, is_deal: e.target.checked })}
+                  style={{
+                    width: "20px",
+                    height: "20px",
+                    cursor: "pointer"
+                  }}
+                />
+                <div style={{ fontSize: "0.85rem" }}>
+                  <div style={{ fontWeight: 600, color: "#111827" }}>
+                    Enable Today's Deal
+                  </div>
+                  <div style={{ color: "#6b7280", marginTop: "0.25rem" }}>
+                    Offer at a discounted price for limited time
+                  </div>
+                </div>
+              </label>
+
+              {importForm.is_deal && (
+                <div style={{
+                  padding: "1rem",
+                  background: "#ffffff",
+                  borderRadius: "8px",
+                  border: "2px solid #fecaca"
+                }}>
+                  <div style={{ display: "grid", gap: "1rem" }}>
+                    <div>
+                      <label style={{
+                        display: "block",
+                        fontSize: "0.85rem",
+                        fontWeight: 600,
+                        color: "#991b1b",
+                        marginBottom: "0.5rem"
+                      }}>
+                        Original Price * ($)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        required={importForm.is_deal}
+                        value={importForm.original_price}
+                        onChange={(e) => setImportForm({ ...importForm, original_price: e.target.value })}
+                        placeholder="99.99"
+                        style={{
+                          width: "100%",
+                          padding: "0.75rem",
+                          border: "2px solid #fecaca",
+                          borderRadius: "8px",
+                          fontSize: "1rem"
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{
+                        display: "block",
+                        fontSize: "0.85rem",
+                        fontWeight: 600,
+                        color: "#991b1b",
+                        marginBottom: "0.5rem"
+                      }}>
+                        Deal Price * ($)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        required={importForm.is_deal}
+                        value={importForm.deal_price}
+                        onChange={(e) => setImportForm({ ...importForm, deal_price: e.target.value })}
+                        placeholder="79.99"
+                        style={{
+                          width: "100%",
+                          padding: "0.75rem",
+                          border: "2px solid #dc2626",
+                          borderRadius: "8px",
+                          fontSize: "1rem",
+                          fontWeight: 700,
+                          color: "#dc2626"
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{
+                        display: "block",
+                        fontSize: "0.85rem",
+                        fontWeight: 600,
+                        color: "#991b1b",
+                        marginBottom: "0.5rem"
+                      }}>
+                        Deal Ends At *
+                      </label>
+                      <input
+                        type="datetime-local"
+                        required={importForm.is_deal}
+                        value={importForm.deal_ends_at}
+                        onChange={(e) => setImportForm({ ...importForm, deal_ends_at: e.target.value })}
+                        style={{
+                          width: "100%",
+                          padding: "0.75rem",
+                          border: "2px solid #fecaca",
+                          borderRadius: "8px",
+                          fontSize: "0.9rem"
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {importForm.original_price && importForm.deal_price && parseFloat(importForm.deal_price) < parseFloat(importForm.original_price) && (
+                    <div style={{
+                      marginTop: "1rem",
+                      padding: "0.75rem",
+                      background: "#f0fdf4",
+                      border: "2px solid #bbf7d0",
+                      borderRadius: "8px",
+                      color: "#166534",
+                      fontSize: "0.85rem",
+                      fontWeight: 600
+                    }}>
+                      💰 Discount: {Math.round(((parseFloat(importForm.original_price) - parseFloat(importForm.deal_price)) / parseFloat(importForm.original_price)) * 100)}% OFF
+                    </div>
+                  )}
+
+                  {importForm.deal_price && importForm.original_price && parseFloat(importForm.deal_price) >= parseFloat(importForm.original_price) && (
+                    <div style={{
+                      marginTop: "1rem",
+                      padding: "0.75rem",
+                      background: "#fef2f2",
+                      border: "2px solid #fecaca",
+                      borderRadius: "8px",
+                      color: "#dc2626",
+                      fontSize: "0.85rem",
+                      fontWeight: 600
+                    }}>
+                      ⚠️ Deal Price must be lower than Original Price
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Actions */}

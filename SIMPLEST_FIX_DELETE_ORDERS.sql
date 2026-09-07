@@ -11,8 +11,7 @@ SELECT COUNT(*) as total_orders FROM orders;
 SELECT * FROM orders LIMIT 10;
 
 -- Step 3: DELETE ALL ORDERS (if you're sure)
--- UNCOMMENT THE LINE BELOW TO DELETE
--- DELETE FROM orders;
+DELETE FROM orders;
 
 -- Step 4: Drop the foreign key
 ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_product_id_fkey;

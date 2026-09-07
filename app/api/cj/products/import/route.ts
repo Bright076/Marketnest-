@@ -18,6 +18,11 @@ export async function POST(request: NextRequest) {
       category,
       stock,
       product_sku,
+      is_trending,
+      is_deal,
+      original_price,
+      deal_price,
+      deal_ends_at,
     } = body;
 
     // Validation
@@ -71,6 +76,11 @@ export async function POST(request: NextRequest) {
           category: category || "Electronics",
           stock: parseInt(stock) || 100,
           product_type: "cj",
+          is_trending: is_trending || false,
+          is_deal: is_deal || false,
+          original_price: is_deal && original_price ? parseFloat(original_price) : null,
+          deal_price: is_deal && deal_price ? parseFloat(deal_price) : null,
+          deal_ends_at: is_deal && deal_ends_at ? new Date(deal_ends_at).toISOString() : null,
         },
       ])
       .select()
