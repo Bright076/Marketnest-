@@ -67,17 +67,7 @@ export default function ProductCard({
   const handleAddToCart = async () => {
     setIsLoading(true);
     try {
-      // Check if user is logged in
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        // Not logged in - show toast and redirect to login
-        toast.warning("Please login to add items to cart");
-        setTimeout(() => router.push("/login"), 1500);
-        return;
-      }
-      
-      // User is logged in - proceed with adding to cart
+      // Add to cart regardless of login status (guest checkout enabled)
       addToCart({ id, name, price, image, type, description, category });
       toast.success(`Added "${name}" to cart!`);
     } finally {

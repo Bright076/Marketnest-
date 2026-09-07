@@ -19,6 +19,16 @@ interface RecentOrder {
   created_at: string;
 }
 
+interface VisitStats {
+  totalVisits: number;
+  todayVisits: number;
+  dailyStats: Array<{
+    date: string;
+    count: number;
+    dayName: string;
+  }>;
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats>({
     productsCount: 0,
@@ -27,10 +37,13 @@ export default function AdminDashboard() {
     totalRevenue: 0
   });
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [visitStats, setVisitStats] = useState<VisitStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingVisits, setLoadingVisits] = useState(true);
 
   useEffect(() => {
     loadDashboardData();
+    loadVisitStats();
   }, []);
 
   const loadDashboardData = async () => {
@@ -78,6 +91,21 @@ export default function AdminDashboard() {
       console.error('Error loading dashboard data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadVisitStats = async () => {
+    try {
+      const response = await fetch('/api/visit-stats');
+      const result = await response.json();
+
+      if (result.success) {
+        setVisitStats(result.data);
+      }
+    } catch (error) {
+      console.error('Error loading visit stats:', error);
+    } finally {
+      setLoadingVisits(false);
     }
   };
 
@@ -188,6 +216,174 @@ export default function AdminDashboard() {
           </h3>
           <p style={{ color: "#6b7280", fontSize: "0.9rem", margin: 0 }}>Total Revenue</p>
         </div>
+      </div>
+
+      {/* Visitors Analytics */}
+      <div style={{
+        background: "#ffffff",
+        padding: "1.5rem",
+        borderRadius: "16px",
+        border: "1px solid #e5e7eb",
+        boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+        marginBottom: "2rem"
+      }}>
+        <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#111827", marginBottom: "1.5rem" }}>
+          👥 Visitors Analytics
+        </h2>
+
+        {loadingVisits ? (
+          <div style={{ textAlign: "center", padding: "2rem", color: "#6b7280" }}>
+            <div style={{
+              width: "40px",
+              height: "40px",
+              border: "3px solid #e5e7eb",
+              borderTop: "3px solid #16a34a",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+              margin: "0 auto 0.5rem"
+            }} />
+            <p style={{ fontSize: "0.85rem" }}>Loading visitor stats...</p>
+          </div>
+        ) : visitStats ? (
+          <>
+            {/* Visit Summary Cards */}
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gap: "1rem",
+              marginBottom: "1.5rem"
+            }}>
+              {/* Total Visits */}
+              <div style={{
+                padding: "1rem",
+                background: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)",
+                borderRadius: "12px",
+                border: "2px solid #bae6fd"
+              }}>
+                <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>👁️</div>
+                <h3 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#0c4a6e", margin: "0 0 0.25rem" }}>
+                  {visitStats.totalVisits.toLocaleString()}
+                </h3>
+                <p style={{ color: "#0369a1", fontSize: "0.85rem", margin: 0, fontWeight: 600 }}>
+                  Total Visits
+                </p>
+              </div>
+
+              {/* Today's Visits */}
+              <div style={{
+                padding: "1rem",
+                background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)",
+                borderRadius: "12px",
+                border: "2px solid #bbf7d0"
+              }}>
+                <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>🔥</div>
+                <h3 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#14532d", margin: "0 0 0.25rem" }}>
+                  {visitStats.todayVisits.toLocaleString()}
+                </h3>
+                <p style={{ color: "#166534", fontSize: "0.85rem", margin: 0, fontWeight: 600 }}>
+                  Today's Visits
+                </p>
+              </div>
+            </div>
+
+            {/* Daily Breakdown */}
+            <div>
+              <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827", marginBottom: "1rem" }}>
+                📊 Last 7 Days Breakdown
+              </h3>
+              
+              <div style={{ overflowX: "auto" }}>
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: `repeat(${visitStats.dailyStats.length}, 1fr)`,
+                  gap: "0.75rem",
+                  minWidth: "500px"
+                }}>
+                  {visitStats.dailyStats.map((day, index) => {
+                    const maxVisits = Math.max(...visitStats.dailyStats.map(d => d.count), 1);
+                    const barHeight = (day.count / maxVisits) * 120;
+                    const isToday = new Date(day.date).toDateString() === new Date().toDateString();
+
+                    return (
+                      <div key={day.date} style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: "0.5rem"
+                      }}>
+                        {/* Visit Count */}
+                        <div style={{
+                          fontSize: "0.9rem",
+                          fontWeight: 700,
+                          color: isToday ? "#16a34a" : "#111827"
+                        }}>
+                          {day.count}
+                        </div>
+
+                        {/* Bar */}
+                        <div style={{
+                          width: "100%",
+                          height: "120px",
+                          background: "#f3f4f6",
+                          borderRadius: "8px",
+                          display: "flex",
+                          alignItems: "flex-end",
+                          padding: "4px",
+                          position: "relative"
+                        }}>
+                          <div style={{
+                            width: "100%",
+                            height: `${barHeight}px`,
+                            background: isToday 
+                              ? "linear-gradient(135deg, #16a34a 0%, #059669 100%)"
+                              : "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                            borderRadius: "6px",
+                            transition: "height 0.3s ease",
+                            minHeight: day.count > 0 ? "8px" : "0"
+                          }} />
+                        </div>
+
+                        {/* Day Label */}
+                        <div style={{ textAlign: "center" }}>
+                          <div style={{
+                            fontSize: "0.75rem",
+                            fontWeight: 600,
+                            color: isToday ? "#16a34a" : "#6b7280"
+                          }}>
+                            {day.dayName}
+                          </div>
+                          <div style={{
+                            fontSize: "0.65rem",
+                            color: "#9ca3af",
+                            marginTop: "2px"
+                          }}>
+                            {new Date(day.date).getDate()}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div style={{
+            textAlign: "center",
+            padding: "2rem",
+            background: "#fef2f2",
+            borderRadius: "12px",
+            border: "2px dashed #fecaca"
+          }}>
+            <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>📊</div>
+            <p style={{ color: "#991b1b", fontWeight: 600, marginBottom: "0.25rem" }}>
+              No visit data available
+            </p>
+            <p style={{ color: "#6b7280", fontSize: "0.85rem", margin: 0 }}>
+              Visit tracking will start once the database migration is complete
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Recent Orders */}

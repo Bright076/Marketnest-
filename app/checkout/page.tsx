@@ -33,12 +33,12 @@ export default function CheckoutPage() {
 
   const checkAuthAndLoadProfile = async () => {
     try {
-      // Check if user is logged in
+      // Check if user is logged in (optional - guest checkout allowed)
       const { data: { user }, error } = await supabase.auth.getUser();
       
       if (error || !user) {
-        // Don't redirect immediately - let them fill the form first
-        console.log('User not logged in - will need to login before checkout');
+        // Guest checkout - no profile to load
+        console.log('Guest checkout - form starts empty');
         setLoading(false);
         return;
       }
@@ -88,15 +88,10 @@ export default function CheckoutPage() {
     setSubmitting(true);
 
     try {
-      // Re-check authentication before submitting
+      // Check authentication status (optional - guest checkout allowed)
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
-      if (authError || !user) {
-        setSubmitting(false);
-        toast.error("Your session has expired. Please login again.");
-        setTimeout(() => router.push("/login"), 1500);
-        return; // Don't clear cart, just redirect
-      }
+      // Guest checkout is enabled - user_id will be null for guests
 
       // Calculate total in USD
       const totalUSD = cartTotal;
@@ -112,7 +107,7 @@ export default function CheckoutPage() {
           .from('orders')
           .insert([
             {
-              user_id: user.id,
+              user_id: user?.id || null, // NULL for guest orders
               product_id: productId,
               quantity: quantity,
               customer_name: formData.customer_name,

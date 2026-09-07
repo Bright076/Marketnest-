@@ -27,14 +27,21 @@ function OrderSuccessContent() {
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isGuest, setIsGuest] = useState(false);
 
   useEffect(() => {
+    checkIfGuest();
     if (orderId) {
       loadOrder();
     } else {
       router.push('/');
     }
   }, [orderId]);
+
+  const checkIfGuest = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setIsGuest(!user); // True if no user logged in
+  };
 
   const loadOrder = async () => {
     try {
@@ -236,6 +243,80 @@ function OrderSuccessContent() {
             </div>
           </div>
         </div>
+
+        {/* Guest Signup Prompt */}
+        {isGuest && (
+          <div style={{
+            background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)",
+            padding: "2rem",
+            borderRadius: "16px",
+            border: "2px solid #93c5fd",
+            marginBottom: "1.5rem",
+            boxShadow: "0 4px 12px rgba(59, 130, 246, 0.15)"
+          }}>
+            <div style={{ display: "flex", alignItems: "start", gap: "1.5rem" }}>
+              <div style={{
+                fontSize: "3rem",
+                flexShrink: 0
+              }}>
+                🎁
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#1e40af", marginBottom: "0.75rem" }}>
+                  Create an Account to Track Your Order!
+                </h3>
+                <p style={{ color: "#1e40af", marginBottom: "1.5rem", lineHeight: 1.6 }}>
+                  Sign up now to track your order status, view order history, save delivery addresses, and get exclusive deals!
+                </p>
+                <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+                  <Link href={`/signup?email=${encodeURIComponent(order.customer_name || '')}`} style={{
+                    padding: "0.875rem 1.5rem",
+                    background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                    color: "#ffffff",
+                    borderRadius: "10px",
+                    fontWeight: 700,
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    boxShadow: "0 4px 12px rgba(37, 99, 235, 0.3)",
+                    transition: "all 0.2s"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 8px 20px rgba(37, 99, 235, 0.4)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(37, 99, 235, 0.3)";
+                  }}>
+                    ✨ Create Free Account
+                  </Link>
+                  <Link href="/login" style={{
+                    padding: "0.875rem 1.5rem",
+                    background: "#ffffff",
+                    color: "#2563eb",
+                    border: "2px solid #2563eb",
+                    borderRadius: "10px",
+                    fontWeight: 700,
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    transition: "all 0.2s"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#eff6ff";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#ffffff";
+                  }}>
+                    Already have an account? Login
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Info Box */}
         <div style={{

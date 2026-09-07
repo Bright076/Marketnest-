@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import SocialProofNotification from "./components/SocialProofNotification";
+import VisitTracker from "./components/VisitTracker";
 import Providers from "./Providers";
 
 const inter = Inter({
@@ -50,6 +51,7 @@ export default function RootLayout({
         }}
       >
         <Providers>
+          <VisitTracker />
           <Navbar />
           <main style={{ 
             flexGrow: 1, 

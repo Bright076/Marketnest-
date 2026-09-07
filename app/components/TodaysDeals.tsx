@@ -77,11 +77,12 @@ export default function TodaysDeals() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      if (!user) {
-        toast.warning("Please login to add items to cart");
-        setTimeout(() => router.push("/login"), 1500);
-        return;
-      }
+      // Guest checkout enabled - no login required
+      // if (!user) {
+      //   toast.warning("Please login to add items to cart");
+      //   setTimeout(() => router.push("/login"), 1500);
+      //   return;
+      // }
       
       addToCart({
         id: deal.id,
