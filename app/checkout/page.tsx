@@ -96,61 +96,27 @@ export default function CheckoutPage() {
       // Calculate total in USD
       const totalUSD = cartTotal;
 
-      // Create orders for each product in cart
-      const orderPromises = cart.map(async (item) => {
-        const productId = item.id;
-        const quantity = item.quantity;
-        const itemPrice = parseFloat(item.price.replace('$', ''));
-        const itemTotal = itemPrice * quantity;
-
-        const { data: order, error } = await supabase
-          .from('orders')
-          .insert([
-            {
-              user_id: user?.id || null, // NULL for guest orders
-              product_id: productId,
-              quantity: quantity,
-              customer_name: formData.customer_name,
-              customer_email: formData.customer_email,
-              customer_phone: formData.customer_phone,
-              customer_country: formData.customer_country,
-              customer_state: formData.customer_state,
-              customer_city: formData.customer_city,
-              customer_address: formData.customer_address,
-              customer_postal_code: formData.customer_postal_code,
-              order_notes: formData.order_notes || null,
-              amount_paid: itemTotal,
-              currency: "USD",
-              payment_method: paymentMethod === "flutterwave" ? "vendo_flutterwave" : "usdt_trc20",
-              payment_status: 'pending',
-              order_status: 'pending'
-            }
-          ])
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        // Update product stock
-        const { data: currentProduct } = await supabase
-          .from('products')
-          .select('stock')
-          .eq('id', productId)
-          .single();
-
-        if (currentProduct && currentProduct.stock > 0) {
-          const newStock = Math.max(0, currentProduct.stock - quantity);
-          await supabase
-            .from('products')
-            .update({ stock: newStock })
-            .eq('id', productId);
-        }
-
-        return order;
+      // Create orders via API route (uses service role to bypass RLS)
+      console.log('Creating orders via API...');
+      const orderResponse = await fetch('/api/orders/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cart: cart,
+          formData: formData,
+          paymentMethod: paymentMethod,
+          userId: user?.id || null
+        })
       });
 
-      const orders = await Promise.all(orderPromises);
-      const orderIds = orders.map(o => o.id);
+      const orderResult = await orderResponse.json();
+
+      if (!orderResult.success) {
+        throw new Error(orderResult.error || 'Failed to create orders');
+      }
+
+      const orders = orderResult.orders;
+      const orderIds = orderResult.orderIds;
 
       console.log('✅ Orders created:', orderIds);
 
