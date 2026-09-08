@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
+import GuestSignupModal from "@/app/components/GuestSignupModal";
 
 function USDTConfirmationContent() {
   const searchParams = useSearchParams();
@@ -11,6 +12,7 @@ function USDTConfirmationContent() {
   const amount = searchParams.get('amount');
   const [isGuest, setIsGuest] = useState(false);
   const [customerEmail, setCustomerEmail] = useState("");
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     checkGuestStatus();
@@ -19,10 +21,11 @@ function USDTConfirmationContent() {
   const checkGuestStatus = async () => {
     // Check if user is logged in
     const { data: { user } } = await supabase.auth.getUser();
-    setIsGuest(!user);
+    const guestStatus = !user;
+    setIsGuest(guestStatus);
 
-    // If guest and we have orderId, fetch order email
-    if (!user && orderId) {
+    // If guest and we have orderId, fetch order email and show modal
+    if (guestStatus && orderId) {
       try {
         const response = await fetch(`/api/admin/orders?filter=all`);
         const result = await response.json();
@@ -30,6 +33,8 @@ function USDTConfirmationContent() {
           const order = result.orders.find((o: any) => o.id === orderId);
           if (order) {
             setCustomerEmail(order.customer_email || "");
+            // Show modal after a brief delay
+            setTimeout(() => setShowModal(true), 1000);
           }
         }
       } catch (error) {
@@ -40,6 +45,13 @@ function USDTConfirmationContent() {
 
   return (
     <div style={{ minHeight: "100vh", paddingTop: "60px", background: "#f9fafb" }}>
+      {/* Guest Signup Modal */}
+      <GuestSignupModal 
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        customerEmail={customerEmail}
+      />
+
       <div style={{ maxWidth: "800px", margin: "0 auto", padding: "2rem 1.5rem" }}>
         {/* Success Icon */}
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>

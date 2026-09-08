@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import GuestSignupModal from "../components/GuestSignupModal";
 
 interface Order {
   id: string;
@@ -29,6 +30,7 @@ function OrderSuccessContent() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [isGuest, setIsGuest] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     checkIfGuest();
@@ -41,7 +43,13 @@ function OrderSuccessContent() {
 
   const checkIfGuest = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    setIsGuest(!user); // True if no user logged in
+    const guestStatus = !user;
+    setIsGuest(guestStatus);
+    
+    // Show modal after brief delay if guest
+    if (guestStatus) {
+      setTimeout(() => setShowModal(true), 1500);
+    }
   };
 
   const loadOrder = async () => {
@@ -100,6 +108,13 @@ function OrderSuccessContent() {
 
   return (
     <div style={{ minHeight: "100vh", paddingTop: "60px", background: "#f9fafb" }}>
+      {/* Guest Signup Modal */}
+      <GuestSignupModal 
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        customerEmail={order?.customer_email || ""}
+      />
+
       <div style={{ maxWidth: "800px", margin: "0 auto", padding: "2rem 1.5rem" }}>
         {/* Success Animation */}
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
