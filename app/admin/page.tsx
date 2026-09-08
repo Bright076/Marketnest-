@@ -48,45 +48,36 @@ export default function AdminDashboard() {
 
   const loadDashboardData = async () => {
     try {
-      // Get products count
+      // Create service role client for admin dashboard
+      // Note: This runs client-side, so we'll use an API route instead
+      
+      // Get products count (can use anon key, products are public)
       const { count: productsCount } = await supabase
         .from('products')
         .select('*', { count: 'exact', head: true });
 
-      // Get orders count
-      const { count: ordersCount } = await supabase
-        .from('orders')
-        .select('*', { count: 'exact', head: true });
+      // Fetch orders data from API (uses service role)
+      const ordersResponse = await fetch('/api/admin/orders?filter=all');
+      const ordersResult = await ordersResponse.json();
+      
+      const allOrders = ordersResult.success ? ordersResult.orders : [];
+      const ordersCount = allOrders.length;
+      const pendingOrders = allOrders.filter((o: any) => o.order_status === 'pending').length;
+      const totalRevenue = allOrders
+        .filter((o: any) => o.payment_status === 'paid')
+        .reduce((sum: number, order: any) => sum + Number(order.amount_paid), 0);
 
-      // Get pending orders count
-      const { count: pendingOrders } = await supabase
-        .from('orders')
-        .select('*', { count: 'exact', head: true })
-        .eq('order_status', 'pending');
-
-      // Get total revenue
-      const { data: orders } = await supabase
-        .from('orders')
-        .select('amount_paid')
-        .eq('payment_status', 'paid');
-
-      const totalRevenue = orders?.reduce((sum, order) => sum + Number(order.amount_paid), 0) || 0;
-
-      // Get recent orders
-      const { data: recentOrdersData } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(5);
+      // Get recent orders (first 5)
+      const recentOrdersData = allOrders.slice(0, 5);
 
       setStats({
         productsCount: productsCount || 0,
-        ordersCount: ordersCount || 0,
-        pendingOrders: pendingOrders || 0,
+        ordersCount: ordersCount,
+        pendingOrders: pendingOrders,
         totalRevenue
       });
 
-      setRecentOrders(recentOrdersData || []);
+      setRecentOrders(recentOrdersData);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {

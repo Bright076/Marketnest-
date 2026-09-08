@@ -36,27 +36,18 @@ export default function OrdersPage() {
 
   const loadOrders = async () => {
     try {
-      let query = supabase
-        .from('orders')
-        .select(`
-          *,
-          products (
-            title,
-            image_url
-          )
-        `)
-        .order('created_at', { ascending: false });
+      // Fetch orders from API route (uses service role, bypasses RLS)
+      const response = await fetch(`/api/admin/orders?filter=${filter}`);
+      const result = await response.json();
 
-      if (filter !== 'all') {
-        query = query.eq('order_status', filter);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to load orders');
       }
 
-      const { data, error } = await query;
-
-      if (error) throw error;
-      setOrders(data || []);
+      setOrders(result.orders || []);
     } catch (error) {
       console.error('Error loading orders:', error);
+      toast.error('Failed to load orders');
     } finally {
       setLoading(false);
     }
