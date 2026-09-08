@@ -1,8 +1,12 @@
 // API Route: Track Visit
-// Logs page visits to the database
+// Logs page visits to the database using service role (bypasses RLS)
 
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from "@supabase/supabase-js";
+
+// Use service role key for backend operations (bypasses RLS)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,6 +20,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Create Supabase client with service role (bypasses RLS)
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
+
     // Insert visit record
     const { error } = await supabase
       .from("visits")
@@ -27,6 +39,7 @@ export async function POST(request: NextRequest) {
       ]);
 
     if (error) {
+      console.error('Visit tracking error:', error);
       throw error;
     }
 

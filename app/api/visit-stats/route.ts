@@ -1,11 +1,23 @@
 // API Route: Visit Statistics
-// Returns visit counts and daily breakdown
+// Returns visit counts and daily breakdown using service role (bypasses RLS)
 
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from "@supabase/supabase-js";
+
+// Use service role key for backend operations (bypasses RLS)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function GET(request: NextRequest) {
   try {
+    // Create Supabase client with service role (bypasses RLS)
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
+
     // Get total visits count
     const { count: totalVisits } = await supabase
       .from("visits")

@@ -8,6 +8,7 @@ import Link from "next/link";
 interface Order {
   id: string;
   customer_name: string;
+  customer_email: string;
   customer_phone: string;
   customer_address: string;
   amount_paid: number;
@@ -269,7 +270,7 @@ function OrderSuccessContent() {
                   Sign up now to track your order status, view order history, save delivery addresses, and get exclusive deals!
                 </p>
                 <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-                  <Link href={`/signup?email=${encodeURIComponent(order.customer_name || '')}`} style={{
+                  <Link href={`/signup?email=${encodeURIComponent(order.customer_email || '')}&orderEmail=${encodeURIComponent(order.customer_email || '')}`} style={{
                     padding: "0.875rem 1.5rem",
                     background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
                     color: "#ffffff",

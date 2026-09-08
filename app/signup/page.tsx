@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { createUserProfile } from "@/lib/createProfile";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ButtonSpinner } from "../components/LoadingSpinner";
 
-export default function SignupPage() {
+function SignupContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -17,6 +18,14 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [passwordError, setPasswordError] = useState("");
+
+  // Pre-fill email from URL parameter (from guest order)
+  useEffect(() => {
+    const emailParam = searchParams.get('email');
+    if (emailParam) {
+      setEmail(decodeURIComponent(emailParam));
+    }
+  }, [searchParams]);
 
   // Password validation function
   const validatePassword = (pwd: string) => {
@@ -98,6 +107,27 @@ export default function SignupPage() {
           console.log("✅ Profile created successfully!");
         } else {
           console.warn("⚠️ Profile creation failed, but signup succeeded");
+        }
+
+        // Try to link any guest orders with this email
+        try {
+          const linkResponse = await fetch('/api/link-guest-orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: authData.user.id,
+              email: email
+            })
+          });
+
+          const linkResult = await linkResponse.json();
+          
+          if (linkResult.success && linkResult.ordersLinked > 0) {
+            console.log(`✅ Linked ${linkResult.ordersLinked} guest orders to new account`);
+          }
+        } catch (linkError) {
+          console.warn('Failed to link guest orders, but signup succeeded:', linkError);
+          // Don't fail signup if order linking fails
         }
 
         // Check if email confirmation is required
@@ -508,5 +538,40 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={
+      <div style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)"
+      }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{
+            width: "60px",
+            height: "60px",
+            border: "4px solid #e5e7eb",
+            borderTop: "4px solid #16a34a",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+            margin: "0 auto 1rem"
+          }} />
+          <p style={{ color: "#6b7280" }}>Loading...</p>
+        </div>
+        <style dangerouslySetInnerHTML={{__html: `
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}} />
+      </div>
+    }>
+      <SignupContent />
+    </Suspense>
   );
 }
