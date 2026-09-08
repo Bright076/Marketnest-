@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import GuestSignupModal from "../components/GuestSignupModal";
+import GuestSignupModal from "@/app/components/GuestSignupModal";
 
 interface Order {
   id: string;
