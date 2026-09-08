@@ -111,6 +111,8 @@ function SignupContent() {
 
         // Try to link any guest orders with this email
         try {
+          console.log('🔗 Attempting to link guest orders for email:', email);
+          
           const linkResponse = await fetch('/api/link-guest-orders', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -122,11 +124,19 @@ function SignupContent() {
 
           const linkResult = await linkResponse.json();
           
+          console.log('🔗 Link API response:', linkResult);
+          
           if (linkResult.success && linkResult.ordersLinked > 0) {
-            console.log(`✅ Linked ${linkResult.ordersLinked} guest orders to new account`);
+            console.log(`✅ Successfully linked ${linkResult.ordersLinked} guest orders to new account`);
+            // Show success message to user
+            setError(`Account created! ${linkResult.ordersLinked} previous order(s) have been linked to your account.`);
+          } else if (linkResult.success) {
+            console.log('ℹ️ No guest orders found to link');
+          } else {
+            console.error('❌ Failed to link orders:', linkResult.error);
           }
         } catch (linkError) {
-          console.warn('Failed to link guest orders, but signup succeeded:', linkError);
+          console.error('❌ Exception while linking guest orders:', linkError);
           // Don't fail signup if order linking fails
         }
 
